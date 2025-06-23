@@ -1,0 +1,13 @@
+
+
+=== New Order ===
+Order Date: 2025-06-23 11:51:25
+Customer: manashi (09926688303)
+Address: karan, Udaipur, Rajasthan
+Transaction ID: 9926688303hhhhy
+Subtotal: ₹38,250.00
+Delivery Charge: ₹350.00
+Total Amount: ₹38,600.00
+Advance Paid: ₹19,300.00
+Items:
+- Laptop (1 × ₹38,250.00)
