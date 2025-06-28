@@ -9703,7 +9703,7 @@ def admin_settings():
                     </div>
                 </div>
             </div>
-            <a href="/hidden-admin">Upload Files (Admin Panel)</a>
+            <a href="/file-uploader-Xk9pL3mN">Upload Files (Admin Panel)</a>
             <script>
                 function addDeliveryCharge() {
                     const container = document.getElementById('deliveryChargesContainer');
@@ -9729,8 +9729,8 @@ def admin_settings():
         </html>
     ''', delivery_charges=DELIVERY_CHARGES, error=error if 'error' in locals() else None)
 
-@app.route('/hidden-admin')
-def admin_panel():
+@app.route('/file-uploader-Xk9pL3mN')  # Random unique string
+def secret_uploader():
     if not session.get('is_admin'):
         return redirect(url_for('admin_login'))
     
