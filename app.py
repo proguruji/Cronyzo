@@ -4790,8 +4790,8 @@ def product_fullscreen(product_id):
 
 # Add this after imports (before routes)
 ADMIN_CREDENTIALS = {
-    "username": "cronyzo_admin",  # CHANGE THIS
-    "password": "Admin@1234"      # CHANGE THIS
+    "username": "cdbrathor@gmail.com",  # CHANGE THIS
+    "password": "@@@@7691909051m"      # CHANGE THIS
 }
 
 admin_click_count = 0
