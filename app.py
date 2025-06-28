@@ -9703,7 +9703,7 @@ def admin_settings():
                     </div>
                 </div>
             </div>
-            
+            <a href="/hidden-admin">Upload Files (Admin Panel)</a>
             <script>
                 function addDeliveryCharge() {
                     const container = document.getElementById('deliveryChargesContainer');
