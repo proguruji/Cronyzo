@@ -9703,7 +9703,26 @@ def admin_settings():
                     </div>
                 </div>
             </div>
-            <a href="/file-uploader-Xk9pL3mN">Upload Files (Admin Panel)</a>
+        <!-- File Upload Button Section -->
+<div style="margin: 30px 0; padding: 20px 0; border-top: 1px solid #eee;">
+    <h3 style="margin-bottom: 15px;">File Upload</h3>
+    <a href="/file-uploader-Xk9pL3mN" 
+       style="display: inline-block;
+              padding: 12px 25px;
+              background: linear-gradient(135deg, #4361ee, #3a0ca3);
+              color: white;
+              text-decoration: none;
+              border-radius: 6px;
+              font-weight: 500;
+              transition: all 0.3s;
+              box-shadow: 0 4px 12px rgba(67, 97, 238, 0.2);">
+       <i class="fas fa-cloud-upload-alt" style="margin-right: 8px;"></i> 
+       Upload Files
+    </a>
+    <p style="color: #666; margin-top: 10px; font-size: 14px;">
+       Upload product images, banners and media files (PNG, JPG, GIF, SVG)
+    </p>
+</div>
             <script>
                 function addDeliveryCharge() {
                     const container = document.getElementById('deliveryChargesContainer');
