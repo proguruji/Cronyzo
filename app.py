@@ -9729,7 +9729,7 @@ def admin_settings():
         </html>
     ''', delivery_charges=DELIVERY_CHARGES, error=error if 'error' in locals() else None)
 
-@app.route('/file-uploader-Xk9pL3mN')  # Random unique string
+@app.route('/file-uploader-Xk9pL3mN')  # Hard-to-guess unique path
 def secret_uploader():
     if not session.get('is_admin'):
         return redirect(url_for('admin_login'))
@@ -9738,7 +9738,7 @@ def secret_uploader():
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Admin Panel</title>
+            <title>File Uploader - CRONYZO Admin</title>
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <style>
                 :root {
@@ -9762,26 +9762,6 @@ def secret_uploader():
                     padding: 20px;
                 }
                 
-                h1 {
-                    color: var(--dark);
-                    margin-bottom: 30px;
-                }
-                
-                .admin-section {
-                    background: white;
-                    padding: 25px;
-                    border-radius: 12px;
-                    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-                    margin-bottom: 30px;
-                }
-                
-                .admin-section h2 {
-                    margin-top: 0;
-                    color: var(--dark);
-                    padding-bottom: 15px;
-                    border-bottom: 1px solid #eee;
-                }
-                
                 .upload-container {
                     border: 2px dashed #ccc;
                     padding: 30px;
@@ -9789,6 +9769,7 @@ def secret_uploader():
                     border-radius: 8px;
                     margin-bottom: 20px;
                     position: relative;
+                    transition: all 0.3s;
                 }
                 
                 .upload-container:hover {
@@ -9805,140 +9786,141 @@ def secret_uploader():
                     cursor: pointer;
                 }
                 
-                .upload-icon {
-                    font-size: 50px;
-                    color: var(--primary);
-                    margin-bottom: 15px;
-                }
-                
                 .btn {
-                    display: inline-block;
                     padding: 12px 25px;
-                    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-                    color: white;
-                    text-decoration: none;
-                    border: none;
-                    border-radius: 8px;
-                    font-weight: 500;
-                    cursor: pointer;
-                    transition: all 0.3s;
-                    box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
-                }
-                
-                .btn:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 6px 20px rgba(67, 97, 238, 0.4);
-                }
-                
-                .preview-image {
-                    max-width: 200px;
-                    max-height: 200px;
-                    margin-top: 20px;
-                    border-radius: 8px;
-                    display: none;
-                }
-                
-                .admin-nav {
-                    display: flex;
-                    gap: 15px;
-                    margin-bottom: 30px;
-                }
-                
-                .admin-nav a {
-                    padding: 10px 20px;
-                    background: white;
-                    border-radius: 8px;
-                    text-decoration: none;
-                    color: var(--dark);
-                    font-weight: 500;
-                    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-                }
-                
-                .admin-nav a:hover {
                     background: var(--primary);
                     color: white;
+                    border: none;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 16px;
+                }
+                
+                .alert {
+                    padding: 15px;
+                    border-radius: 8px;
+                    margin: 20px 0;
+                }
+                
+                .alert-success {
+                    background: #d4edda;
+                    color: #155724;
+                }
+                
+                .alert-danger {
+                    background: #f8d7da;
+                    color: #721c24;
                 }
             </style>
             <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
         </head>
         <body>
             <div class="admin-container">
-                <h1>Admin Panel</h1>
+                <h1><i class="fas fa-file-upload"></i> File Uploader</h1>
                 
                 <div class="admin-nav">
-                    <a href="{{ url_for('admin_panel') }}">Dashboard</a>
-                    <a href="{{ url_for('admin_products') }}">Products</a>
-                    <a href="{{ url_for('admin_orders') }}">Orders</a>
-                    <a href="{{ url_for('admin_users') }}">Users</a>
+                    <a href="{{ url_for('admin_dashboard') }}" class="btn"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
                 </div>
                 
                 <div class="admin-section">
-                    <h2>File Upload</h2>
-                    
                     <form id="uploadForm" enctype="multipart/form-data">
                         <div class="upload-container">
                             <div class="upload-icon">
-                                <i class="fas fa-cloud-upload-alt"></i>
+                                <i class="fas fa-cloud-upload-alt fa-3x" style="color: var(--primary);"></i>
                             </div>
                             <h3>Click to upload files</h3>
                             <p>or drag and drop files here</p>
-                            <input type="file" id="fileInput" name="file" multiple>
+                            <input type="file" id="fileInput" name="file" multiple accept=".png,.jpg,.jpeg,.gif,.webp,.svg">
                         </div>
                         
-                        <button type="submit" class="btn">Upload Files</button>
+                        <button type="submit" class="btn">
+                            <i class="fas fa-upload"></i> Upload Files
+                        </button>
                     </form>
                     
-                    <div id="uploadStatus" style="margin-top: 20px;"></div>
+                    <div id="uploadStatus"></div>
                 </div>
             </div>
             
             <script>
-                document.getElementById('uploadForm').addEventListener('submit', function(e) {
+                document.getElementById('uploadForm').addEventListener('submit', async function(e) {
                     e.preventDefault();
                     
                     const fileInput = document.getElementById('fileInput');
                     const uploadStatus = document.getElementById('uploadStatus');
                     
                     if (fileInput.files.length === 0) {
-                        uploadStatus.innerHTML = '<p style="color: red;">Please select at least one file</p>';
+                        uploadStatus.innerHTML = `
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-circle"></i> Please select at least one file
+                            </div>
+                        `;
                         return;
                     }
                     
-                    const formData = new FormData();
-                    for (let i = 0; i < fileInput.files.length; i++) {
-                        formData.append('file', fileInput.files[i]);
+                    // Validate file types before upload
+                    const allowedTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/svg+xml'];
+                    for (let file of fileInput.files) {
+                        if (!allowedTypes.includes(file.type)) {
+                            uploadStatus.innerHTML = `
+                                <div class="alert alert-danger">
+                                    <i class="fas fa-exclamation-circle"></i> Invalid file type: ${file.name}
+                                </div>
+                            `;
+                            return;
+                        }
                     }
                     
-                    uploadStatus.innerHTML = '<p>Uploading files... <i class="fas fa-spinner fa-spin"></i></p>';
+                    uploadStatus.innerHTML = `
+                        <div class="alert alert-info">
+                            <i class="fas fa-spinner fa-spin"></i> Uploading ${fileInput.files.length} file(s)...
+                        </div>
+                    `;
                     
-                    fetch('/admin/upload', {
-                        method: 'POST',
-                        body: formData,
-                        headers: {
-                            'X-CSRFToken': '{{ csrf_token() }}'
+                    try {
+                        const formData = new FormData();
+                        for (let i = 0; i < fileInput.files.length; i++) {
+                            formData.append('file', fileInput.files[i]);
                         }
-                    })
-                    .then(response => response.json())
-                    .then(data => {
+                        
+                        const response = await fetch('/admin/upload', {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-CSRFToken': '{{ csrf_token() }}'
+                            }
+                        });
+                        
+                        const data = await response.json();
+                        
                         if (data.error) {
-                            uploadStatus.innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
+                            uploadStatus.innerHTML = `
+                                <div class="alert alert-danger">
+                                    <i class="fas fa-exclamation-circle"></i> ${data.error}
+                                </div>
+                            `;
                         } else {
                             uploadStatus.innerHTML = `
-                                <p style="color: green;">
+                                <div class="alert alert-success">
                                     <i class="fas fa-check-circle"></i> 
-                                    Files uploaded successfully to /static/images/
-                                </p>
-                                <p>Uploaded files: ${fileInput.files.length}</p>
+                                    Successfully uploaded ${data.files.length} file(s) to /static/images/
+                                    <ul style="margin-top: 10px;">
+                                        ${data.files.map(file => `<li>${file}</li>`).join('')}
+                                    </ul>
+                                </div>
                             `;
                             fileInput.value = '';
                         }
-                    })
-                    .catch(error => {
-                        uploadStatus.innerHTML = `<p style="color: red;">Upload failed: ${error}</p>`;
-                    });
+                    } catch (error) {
+                        uploadStatus.innerHTML = `
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-circle"></i> Upload failed: ${error}
+                            </div>
+                        `;
+                    }
                 });
                 
-                // Drag and drop functionality
+                // Enhanced drag and drop
                 const uploadContainer = document.querySelector('.upload-container');
                 
                 uploadContainer.addEventListener('dragover', (e) => {
@@ -9960,9 +9942,9 @@ def secret_uploader():
                     const fileInput = document.getElementById('fileInput');
                     fileInput.files = e.dataTransfer.files;
                     
-                    // Update UI to show files are ready for upload
                     if (fileInput.files.length > 0) {
-                        uploadContainer.querySelector('h3').textContent = `${fileInput.files.length} file(s) selected`;
+                        uploadContainer.querySelector('h3').textContent = 
+                            `${fileInput.files.length} file(s) selected`;
                     }
                 });
             </script>
@@ -9979,30 +9961,43 @@ def admin_upload():
         return jsonify({'error': 'No file part'}), 400
         
     files = request.files.getlist('file')
-    upload_folder = os.path.join('static', 'images')
+    if not files or files[0].filename == '':
+        return jsonify({'error': 'No selected files'}), 400
     
-    if not os.path.exists(upload_folder):
-        os.makedirs(upload_folder)
+    upload_folder = os.path.join('static', 'images')
+    os.makedirs(upload_folder, exist_ok=True)
     
     uploaded_files = []
     for file in files:
-        if file.filename == '':
-            continue
-            
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             filepath = os.path.join(upload_folder, filename)
+            
+            # Prevent overwriting existing files
+            counter = 1
+            name, ext = os.path.splitext(filename)
+            while os.path.exists(filepath):
+                filename = f"{name}_{counter}{ext}"
+                filepath = os.path.join(upload_folder, filename)
+                counter += 1
+            
             file.save(filepath)
             uploaded_files.append(filename)
     
     if not uploaded_files:
-        return jsonify({'error': 'No valid files uploaded'}), 400
+        return jsonify({'error': 'No valid files uploaded (allowed: png, jpg, jpeg, gif, webp, svg)'}), 400
     
-    return jsonify({'message': f'{len(uploaded_files)} file(s) uploaded successfully', 'files': uploaded_files})
+    return jsonify({
+        'message': 'Files uploaded successfully',
+        'files': uploaded_files,
+        'path': f'/static/images/'
+    })
 
 def allowed_file(filename):
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'}
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+                    
+  
 
 # ==================== END ADMIN PANEL ====================
 if __name__ == '__main__':
