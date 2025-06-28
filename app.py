@@ -9729,6 +9729,281 @@ def admin_settings():
         </html>
     ''', delivery_charges=DELIVERY_CHARGES, error=error if 'error' in locals() else None)
 
+@app.route('/hidden-admin')
+def admin_panel():
+    if not session.get('is_admin'):
+        return redirect(url_for('admin_login'))
+    
+    return render_template_string('''
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Admin Panel</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+                :root {
+                    --primary: #4361ee;
+                    --primary-dark: #3a0ca3;
+                    --accent: #f72585;
+                    --light: #f8f9fa;
+                    --dark: #212529;
+                }
+                
+                body {
+                    font-family: 'Segoe UI', Arial, sans-serif;
+                    margin: 0;
+                    padding: 0;
+                    background: #f5f7fa;
+                }
+                
+                .admin-container {
+                    max-width: 1200px;
+                    margin: 0 auto;
+                    padding: 20px;
+                }
+                
+                h1 {
+                    color: var(--dark);
+                    margin-bottom: 30px;
+                }
+                
+                .admin-section {
+                    background: white;
+                    padding: 25px;
+                    border-radius: 12px;
+                    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+                    margin-bottom: 30px;
+                }
+                
+                .admin-section h2 {
+                    margin-top: 0;
+                    color: var(--dark);
+                    padding-bottom: 15px;
+                    border-bottom: 1px solid #eee;
+                }
+                
+                .upload-container {
+                    border: 2px dashed #ccc;
+                    padding: 30px;
+                    text-align: center;
+                    border-radius: 8px;
+                    margin-bottom: 20px;
+                    position: relative;
+                }
+                
+                .upload-container:hover {
+                    border-color: var(--primary);
+                }
+                
+                .upload-container input {
+                    position: absolute;
+                    width: 100%;
+                    height: 100%;
+                    top: 0;
+                    left: 0;
+                    opacity: 0;
+                    cursor: pointer;
+                }
+                
+                .upload-icon {
+                    font-size: 50px;
+                    color: var(--primary);
+                    margin-bottom: 15px;
+                }
+                
+                .btn {
+                    display: inline-block;
+                    padding: 12px 25px;
+                    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+                    color: white;
+                    text-decoration: none;
+                    border: none;
+                    border-radius: 8px;
+                    font-weight: 500;
+                    cursor: pointer;
+                    transition: all 0.3s;
+                    box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
+                }
+                
+                .btn:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 20px rgba(67, 97, 238, 0.4);
+                }
+                
+                .preview-image {
+                    max-width: 200px;
+                    max-height: 200px;
+                    margin-top: 20px;
+                    border-radius: 8px;
+                    display: none;
+                }
+                
+                .admin-nav {
+                    display: flex;
+                    gap: 15px;
+                    margin-bottom: 30px;
+                }
+                
+                .admin-nav a {
+                    padding: 10px 20px;
+                    background: white;
+                    border-radius: 8px;
+                    text-decoration: none;
+                    color: var(--dark);
+                    font-weight: 500;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+                }
+                
+                .admin-nav a:hover {
+                    background: var(--primary);
+                    color: white;
+                }
+            </style>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+        </head>
+        <body>
+            <div class="admin-container">
+                <h1>Admin Panel</h1>
+                
+                <div class="admin-nav">
+                    <a href="{{ url_for('admin_panel') }}">Dashboard</a>
+                    <a href="{{ url_for('admin_products') }}">Products</a>
+                    <a href="{{ url_for('admin_orders') }}">Orders</a>
+                    <a href="{{ url_for('admin_users') }}">Users</a>
+                </div>
+                
+                <div class="admin-section">
+                    <h2>File Upload</h2>
+                    
+                    <form id="uploadForm" enctype="multipart/form-data">
+                        <div class="upload-container">
+                            <div class="upload-icon">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                            </div>
+                            <h3>Click to upload files</h3>
+                            <p>or drag and drop files here</p>
+                            <input type="file" id="fileInput" name="file" multiple>
+                        </div>
+                        
+                        <button type="submit" class="btn">Upload Files</button>
+                    </form>
+                    
+                    <div id="uploadStatus" style="margin-top: 20px;"></div>
+                </div>
+            </div>
+            
+            <script>
+                document.getElementById('uploadForm').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const fileInput = document.getElementById('fileInput');
+                    const uploadStatus = document.getElementById('uploadStatus');
+                    
+                    if (fileInput.files.length === 0) {
+                        uploadStatus.innerHTML = '<p style="color: red;">Please select at least one file</p>';
+                        return;
+                    }
+                    
+                    const formData = new FormData();
+                    for (let i = 0; i < fileInput.files.length; i++) {
+                        formData.append('file', fileInput.files[i]);
+                    }
+                    
+                    uploadStatus.innerHTML = '<p>Uploading files... <i class="fas fa-spinner fa-spin"></i></p>';
+                    
+                    fetch('/admin/upload', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token() }}'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            uploadStatus.innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
+                        } else {
+                            uploadStatus.innerHTML = `
+                                <p style="color: green;">
+                                    <i class="fas fa-check-circle"></i> 
+                                    Files uploaded successfully to /static/images/
+                                </p>
+                                <p>Uploaded files: ${fileInput.files.length}</p>
+                            `;
+                            fileInput.value = '';
+                        }
+                    })
+                    .catch(error => {
+                        uploadStatus.innerHTML = `<p style="color: red;">Upload failed: ${error}</p>`;
+                    });
+                });
+                
+                // Drag and drop functionality
+                const uploadContainer = document.querySelector('.upload-container');
+                
+                uploadContainer.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    uploadContainer.style.borderColor = 'var(--primary)';
+                    uploadContainer.style.backgroundColor = 'rgba(67, 97, 238, 0.1)';
+                });
+                
+                uploadContainer.addEventListener('dragleave', () => {
+                    uploadContainer.style.borderColor = '#ccc';
+                    uploadContainer.style.backgroundColor = 'transparent';
+                });
+                
+                uploadContainer.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    uploadContainer.style.borderColor = '#ccc';
+                    uploadContainer.style.backgroundColor = 'transparent';
+                    
+                    const fileInput = document.getElementById('fileInput');
+                    fileInput.files = e.dataTransfer.files;
+                    
+                    // Update UI to show files are ready for upload
+                    if (fileInput.files.length > 0) {
+                        uploadContainer.querySelector('h3').textContent = `${fileInput.files.length} file(s) selected`;
+                    }
+                });
+            </script>
+        </body>
+        </html>
+    ''')
+
+@app.route('/admin/upload', methods=['POST'])
+def admin_upload():
+    if not session.get('is_admin'):
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+        
+    files = request.files.getlist('file')
+    upload_folder = os.path.join('static', 'images')
+    
+    if not os.path.exists(upload_folder):
+        os.makedirs(upload_folder)
+    
+    uploaded_files = []
+    for file in files:
+        if file.filename == '':
+            continue
+            
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            filepath = os.path.join(upload_folder, filename)
+            file.save(filepath)
+            uploaded_files.append(filename)
+    
+    if not uploaded_files:
+        return jsonify({'error': 'No valid files uploaded'}), 400
+    
+    return jsonify({'message': f'{len(uploaded_files)} file(s) uploaded successfully', 'files': uploaded_files})
+
+def allowed_file(filename):
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'}
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 # ==================== END ADMIN PANEL ====================
 if __name__ == '__main__':
     if not os.path.exists('static'):
