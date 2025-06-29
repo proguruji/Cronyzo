@@ -9936,6 +9936,16 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
+
+
+
+
+# app.py में if __name__ == '__main__' से पहले
+if not os.path.exists(os.path.join(app.static_folder, 'images')):
+    os.makedirs(os.path.join(app.static_folder, 'images'))
+
+
+
 # ==================== END IMAGE MANAGEMENT ====================
 
 
