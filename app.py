@@ -9737,7 +9737,213 @@ def admin_settings():
         </body>
         </html>
     ''', delivery_charges=DELIVERY_CHARGES, error=error if 'error' in locals() else None)
+    
+import os
+from werkzeug.utils import secure_filename
 
+# Configure upload settings
+app.config['UPLOAD_FOLDER'] = 'static/images'
+app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload size
+
+# Create upload folder if it doesn't exist
+if not os.path.exists(app.config['UPLOAD_FOLDER']):
+    os.makedirs(app.config['UPLOAD_FOLDER'])
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
+
+@app.route('/upload_image', methods=['POST'])
+def upload_image():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+    
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        # Add random string to filename to prevent overwrites
+        unique_filename = f"{secrets.token_hex(8)}_{filename}"
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+        
+        try:
+            file.save(filepath)
+            return jsonify({
+                'success': True,
+                'filename': unique_filename,
+                'url': url_for('static', filename=f'images/{unique_filename}')
+            }), 200
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    
+    return jsonify({'error': 'File type not allowed'}), 400
+
+@app.route('/delete_image', methods=['POST'])
+def delete_image():
+    data = request.get_json()
+    if not data or 'filename' not in data:
+        return jsonify({'error': 'No filename provided'}), 400
+    
+    filename = data['filename']
+    if not filename or not isinstance(filename, str):
+        return jsonify({'error': 'Invalid filename'}), 400
+    
+    # Prevent directory traversal
+    if '/' in filename or '\\' in filename:
+        return jsonify({'error': 'Invalid filename'}), 400
+    
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    
+    if not os.path.exists(filepath):
+        return jsonify({'error': 'File not found'}), 404
+    
+    try:
+        os.remove(filepath)
+        return jsonify({'success': True}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/list_images')
+def list_images():
+    try:
+        images = []
+        for filename in os.listdir(app.config['UPLOAD_FOLDER']):
+            if allowed_file(filename):
+                images.append({
+                    'name': filename,
+                    'url': url_for('static', filename=f'images/{filename}')
+                })
+        return jsonify({'images': images}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Admin routes for image management
+@app.route('/admin/images')
+@csrf.exempt  # You might want to add proper admin authentication
+def admin_images():
+    try:
+        images = []
+        for filename in os.listdir(app.config['UPLOAD_FOLDER']):
+            if allowed_file(filename):
+                images.append({
+                    'name': filename,
+                    'url': url_for('static', filename=f'images/{filename}'),
+                    'size': os.path.getsize(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                })
+        return render_template_string('''
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Image Manager</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 20px; }
+                    .image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+                    .image-card { border: 1px solid #ddd; padding: 10px; border-radius: 5px; }
+                    .image-card img { max-width: 100%; height: auto; }
+                    .actions { margin-top: 10px; display: flex; justify-content: space-between; }
+                    .upload-form { margin: 20px 0; padding: 20px; background: #f5f5f5; border-radius: 5px; }
+                </style>
+            </head>
+            <body>
+                <h1>Image Manager</h1>
+                
+                <div class="upload-form">
+                    <h2>Upload New Image</h2>
+                    <form id="uploadForm" enctype="multipart/form-data">
+                        <input type="file" name="file" id="fileInput" required>
+                        <button type="submit">Upload</button>
+                    </form>
+                    <div id="uploadStatus"></div>
+                </div>
+                
+                <h2>Existing Images</h2>
+                <div class="image-grid" id="imageGrid">
+                    {% for image in images %}
+                    <div class="image-card">
+                        <img src="{{ image.url }}" alt="{{ image.name }}">
+                        <div>{{ image.name }}</div>
+                        <div>{{ (image.size / 1024)|round(2) }} KB</div>
+                        <div class="actions">
+                            <button onclick="copyUrl('{{ image.url }}')">Copy URL</button>
+                            <button onclick="deleteImage('{{ image.name }}')" style="color: red;">Delete</button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <script>
+                    document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+                        e.preventDefault();
+                        const fileInput = document.getElementById('fileInput');
+                        const formData = new FormData();
+                        formData.append('file', fileInput.files[0]);
+                        
+                        const statusDiv = document.getElementById('uploadStatus');
+                        statusDiv.textContent = 'Uploading...';
+                        statusDiv.style.color = 'blue';
+                        
+                        try {
+                            const response = await fetch('/upload_image', {
+                                method: 'POST',
+                                body: formData
+                            });
+                            
+                            const data = await response.json();
+                            
+                            if (data.success) {
+                                statusDiv.textContent = 'Upload successful!';
+                                statusDiv.style.color = 'green';
+                                // Reload the page to show the new image
+                                setTimeout(() => location.reload(), 1000);
+                            } else {
+                                statusDiv.textContent = 'Error: ' + (data.error || 'Upload failed');
+                                statusDiv.style.color = 'red';
+                            }
+                        } catch (error) {
+                            statusDiv.textContent = 'Error: ' + error.message;
+                            statusDiv.style.color = 'red';
+                        }
+                    });
+                    
+                    function copyUrl(url) {
+                        navigator.clipboard.writeText(url)
+                            .then(() => alert('URL copied to clipboard'))
+                            .catch(err => alert('Failed to copy URL: ' + err));
+                    }
+                    
+                    async function deleteImage(filename) {
+                        if (!confirm('Are you sure you want to delete this image?')) return;
+                        
+                        try {
+                            const response = await fetch('/delete_image', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({ filename: filename })
+                            });
+                            
+                            const data = await response.json();
+                            
+                            if (data.success) {
+                                alert('Image deleted successfully');
+                                location.reload();
+                            } else {
+                                alert('Error: ' + (data.error || 'Delete failed'));
+                            }
+                        } catch (error) {
+                            alert('Error: ' + error.message);
+                        }
+                    }
+                </script>
+            </body>
+            </html>
+        ''', images=images)
+    except Exception as e:
+        return f"Error: {str(e)}", 500
 # ==================== END ADMIN PANEL ====================
 if __name__ == '__main__':
     if not os.path.exists('static'):
