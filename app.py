@@ -9769,6 +9769,7 @@ def allowed_file(filename):
 
 @app.route('/upload_image', methods=['POST'])
 def upload_image():
+    try:
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
     
@@ -9790,7 +9791,7 @@ def upload_image():
                 'url': url_for('static', filename=f'images/{unique_filename}')
             }), 200
         except Exception as e:
-            return jsonify({'error': str(e)}), 500
+        return jsonify({'error': str(e)}), 500
     
     return jsonify({'error': 'File type not allowed'}), 400
 
@@ -9898,13 +9899,22 @@ def admin_images():
                         statusDiv.textContent = 'Uploading...';
                         statusDiv.style.color = 'blue';
                         
-                        try {
-                            const response = await fetch('/upload_image', {
-                                method: 'POST',
-                                body: formData
-                            });
+                        
                             
-                            const data = await response.json();
+                            try {
+    const response = await fetch('/upload_image', {
+        method: 'POST',
+        body: formData
+    });
+    
+    // First check if response is JSON
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        throw new Error(text || 'Invalid response from server');
+    }
+    
+    const data = await response.json();
                             
                             if (data.success) {
                                 statusDiv.textContent = 'Upload successful!';
@@ -9915,10 +9925,11 @@ def admin_images():
                                 statusDiv.textContent = 'Error: ' + (data.error || 'Upload failed');
                                 statusDiv.style.color = 'red';
                             }
+
                         } catch (error) {
-                            statusDiv.textContent = 'Error: ' + error.message;
-                            statusDiv.style.color = 'red';
-                        }
+    statusDiv.textContent = 'Error: ' + error.message;
+    statusDiv.style.color = 'red';
+}
                     });
                     
                     function copyUrl(url) {
