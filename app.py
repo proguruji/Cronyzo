@@ -9734,8 +9734,6 @@ def admin_settings():
 
 
 
-# Add these routes after your existing admin routes but before the if __name__ == '__main__':
-
 # ==================== IMAGE MANAGEMENT ====================
 
 @app.route('/admin/images')
@@ -9747,15 +9745,13 @@ def admin_images():
         images_dir = os.path.join(app.static_folder, 'images')
         for filename in os.listdir(images_dir):
             if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp')):
-                # गलत कोड (लाइन 8-13)
-image_files.append({
-    'name': filename,
-    'path': os.path.join('images', filename),
-    'size': os.path.getsize(os.path.join(images_dir, filename)),
-    'upload_time': datetime.fromtimestamp(
-        os.path.getmtime(os.path.join(images_dir, filename))
-    )  # यहाँ ')' जोड़ें
-})
+                image_files.append({
+                    'name': filename,
+                    'path': os.path.join('images', filename),
+                    'size': os.path.getsize(os.path.join(images_dir, filename)),
+                    'upload_time': datetime.fromtimestamp(
+                        os.path.getmtime(os.path.join(images_dir, filename))
+                })
     except Exception as e:
         print(f"Error listing images: {e}")
         image_files = []
@@ -9935,16 +9931,11 @@ def admin_delete_image():
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in {'png', 'jpg', 'jpeg', 'gif', 'webp'}
-
-
-
-
-
-# app.py में if __name__ == '__main__' से पहले
+           
+           
+           # app.py में if __name__ == '__main__' से पहले
 if not os.path.exists(os.path.join(app.static_folder, 'images')):
     os.makedirs(os.path.join(app.static_folder, 'images'))
-
-
 
 # ==================== END IMAGE MANAGEMENT ====================
 
