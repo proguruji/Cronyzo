@@ -9656,6 +9656,8 @@ def admin_settings():
                         <li><a href="{{ url_for('admin_orders') }}"><i class="fas fa-shopping-bag"></i> Orders</a></li>
                         <li><a href="{{ url_for('admin_users') }}"><i class="fas fa-users"></i> Users</a></li>
                         <li><a href="{{ url_for('admin_settings') }}" class="active"><i class="fas fa-cog"></i> Settings</a></li>
+                        <!-- यह नया लिंक जोड़ें -->
+    <li><a href="{{ url_for('admin_images') }}" class="active"><i class="fas fa-images"></i> Images</a></li>
                     </ul>
                 </div>
                 
@@ -9728,6 +9730,212 @@ def admin_settings():
         </body>
         </html>
     ''', delivery_charges=DELIVERY_CHARGES, error=error if 'error' in locals() else None)
+
+
+
+
+# Add these routes after your existing admin routes but before the if __name__ == '__main__':
+
+# ==================== IMAGE MANAGEMENT ====================
+
+@app.route('/admin/images')
+@admin_required
+def admin_images():
+    # Get list of images from static/images directory
+    try:
+        image_files = []
+        images_dir = os.path.join(app.static_folder, 'images')
+        for filename in os.listdir(images_dir):
+            if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp')):
+                image_files.append({
+                    'name': filename,
+                    'path': os.path.join('images', filename),
+                    'size': os.path.getsize(os.path.join(images_dir, filename)),
+                    'upload_time': datetime.fromtimestamp(
+                        os.path.getmtime(os.path.join(images_dir, filename))
+                })
+    except Exception as e:
+        print(f"Error listing images: {e}")
+        image_files = []
+
+    return render_template_string('''
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Image Management - CRONYZO Admin</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+                .image-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                    gap: 20px;
+                    margin-top: 20px;
+                }
+                .image-card {
+                    border: 1px solid #ddd;
+                    border-radius: 8px;
+                    padding: 10px;
+                    background: white;
+                }
+                .image-card img {
+                    width: 100%;
+                    height: 150px;
+                    object-fit: contain;
+                    border-radius: 4px;
+                }
+                .image-actions {
+                    display: flex;
+                    justify-content: space-between;
+                    margin-top: 10px;
+                }
+                .image-info {
+                    font-size: 12px;
+                    color: #666;
+                    margin-top: 5px;
+                }
+                .upload-form {
+                    background: #f8f9fa;
+                    padding: 20px;
+                    border-radius: 8px;
+                    margin-bottom: 20px;
+                }
+            </style>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+        </head>
+        <body>
+            <div class="admin-header">
+                <h1>CRONYZO Admin</h1>
+                <div>
+                    <a href="{{ url_for('admin_logout') }}" class="btn btn-danger">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </div>
+            </div>
+            
+            <div class="admin-container">
+                <div class="admin-sidebar">
+                    <ul class="sidebar-menu">
+                        <li><a href="{{ url_for('admin_dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                        <li><a href="{{ url_for('admin_products') }}"><i class="fas fa-box-open"></i> Products</a></li>
+                        <li><a href="{{ url_for('admin_orders') }}"><i class="fas fa-shopping-bag"></i> Orders</a></li>
+                        <li><a href="{{ url_for('admin_users') }}"><i class="fas fa-users"></i> Users</a></li>
+                        <li><a href="{{ url_for('admin_images') }}" class="active"><i class="fas fa-images"></i> Images</a></li>
+                        <li><a href="{{ url_for('admin_settings') }}"><i class="fas fa-cog"></i> Settings</a></li>
+                    </ul>
+                </div>
+                
+                <div class="admin-content">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Image Management</h2>
+                        </div>
+                        
+                        <div class="upload-form">
+                            <h3>Upload New Image</h3>
+                            <form method="post" action="{{ url_for('admin_upload_image') }}" enctype="multipart/form-data">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <div style="display: flex; gap: 10px; align-items: center;">
+                                    <input type="file" name="image" accept="image/*" required>
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-upload"></i> Upload
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <h3>Existing Images ({{ image_files|length }})</h3>
+                        {% if not image_files %}
+                            <p>No images found in the system.</p>
+                        {% else %}
+                            <div class="image-grid">
+                                {% for image in image_files %}
+                                <div class="image-card">
+                                    <img src="{{ url_for('static', filename=image.path) }}" alt="{{ image.name }}">
+                                    <div class="image-info">
+                                        <div><strong>{{ image.name }}</strong></div>
+                                        <div>{{ (image.size/1024)|round(2) }} KB</div>
+                                        <div>Uploaded: {{ image.upload_time.strftime('%Y-%m-%d %H:%M') }}</div>
+                                    </div>
+                                    <div class="image-actions">
+                                        <button onclick="copyImagePath('{{ image.name }}')" class="btn btn-sm">
+                                            <i class="fas fa-copy"></i> Copy
+                                        </button>
+                                        <form method="post" action="{{ url_for('admin_delete_image') }}" style="display: inline;">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="image_name" value="{{ image.name }}">
+                                            <button type="submit" class="btn btn-sm btn-danger" 
+                                                onclick="return confirm('Are you sure you want to delete {{ image.name }}?')">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <script>
+                function copyImagePath(filename) {
+                    const path = `images/${filename}`;
+                    navigator.clipboard.writeText(path).then(() => {
+                        alert(`Copied to clipboard: ${path}`);
+                    });
+                }
+            </script>
+        </body>
+        </html>
+    ''', image_files=image_files)
+
+@app.route('/admin/images/upload', methods=['POST'])
+@admin_required
+def admin_upload_image():
+    if 'image' not in request.files:
+        return redirect(url_for('admin_images'))
+    
+    file = request.files['image']
+    if file.filename == '':
+        return redirect(url_for('admin_images'))
+    
+    if file and allowed_file(file.filename):
+        # Secure the filename and ensure it's unique
+        filename = secure_filename(file.filename)
+        base, ext = os.path.splitext(filename)
+        unique_filename = f"{base}_{secrets.token_hex(4)}{ext}"
+        
+        # Save the file
+        images_dir = os.path.join(app.static_folder, 'images')
+        file.save(os.path.join(images_dir, unique_filename))
+        
+        return redirect(url_for('admin_images'))
+    
+    return redirect(url_for('admin_images'))
+
+@app.route('/admin/images/delete', methods=['POST'])
+@admin_required
+def admin_delete_image():
+    image_name = request.form.get('image_name')
+    if not image_name:
+        return redirect(url_for('admin_images'))
+    
+    try:
+        image_path = os.path.join(app.static_folder, 'images', image_name)
+        if os.path.exists(image_path):
+            os.remove(image_path)
+    except Exception as e:
+        print(f"Error deleting image: {e}")
+    
+    return redirect(url_for('admin_images'))
+
+# Update the allowed_file function to include more image formats
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+
+# ==================== END IMAGE MANAGEMENT ====================
+
 
 # ==================== END ADMIN PANEL ====================
 if __name__ == '__main__':
