@@ -151,7 +151,8 @@ DELIVERY_CHARGES = {
 
 
 
-app.config['UPLOAD_FOLDER'] = 'static/uploads'
+# Add these configurations at the top of your admin routes
+app.config['UPLOAD_FOLDER'] = 'static/images'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload size
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
@@ -162,6 +163,7 @@ if not os.path.exists(app.config['UPLOAD_FOLDER']):
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
+    
 
 def get_related_products(product_id, category=None, limit=4):
     try:
@@ -9880,67 +9882,68 @@ def admin_settings():
         </html>
     ''', delivery_charges=DELIVERY_CHARGES, error=error if 'error' in locals() else None, image_files=image_files)
 
-@app.route('/admin/upload-image', methods=['POST'])
+
+app.route('/admin/upload', methods=['POST'])
 @admin_required
-def admin_upload_image():
+def upload_image():
     if 'file' not in request.files:
-        flash('No file selected', 'error')
-        return redirect(url_for('admin_settings'))
+        return jsonify({'error': 'No file part'}), 400
     
     file = request.files['file']
-    
     if file.filename == '':
-        flash('No file selected', 'error')
-        return redirect(url_for('admin_settings'))
+        return jsonify({'error': 'No selected file'}), 400
     
-    if not allowed_file(file.filename):
-        flash('Invalid file type. Allowed: PNG, JPG, JPEG, GIF, WEBP', 'error')
-        return redirect(url_for('admin_settings'))
-    
-    try:
-        # Generate unique filename
-        filename = secure_filename(file.filename)
-        unique_filename = f"{uuid.uuid4().hex}_{filename}"
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+    if file and allowed_file(file.filename):
+        try:
+            # Secure the filename and make it unique
+            filename = secure_filename(file.filename)
+            base, ext = os.path.splitext(filename)
+            unique_filename = f"{base}_{int(time.time())}{ext}"
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+            
+            # Save the file
+            file.save(filepath)
+            
+            # Return the relative URL for the image
+            image_url = url_for('static', filename=f'images/{unique_filename}')
+            return jsonify({'success': True, 'url': image_url, 'filename': unique_filename})
         
-        # Save file
-        file.save(filepath)
-        flash('Image uploaded successfully!', 'success')
-    except Exception as e:
-        print(f"Error uploading image: {str(e)}")
-        flash('Failed to upload image', 'error')
-    
-    return redirect(url_for('admin_settings'))
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    else:
+        return jsonify({'error': 'File type not allowed'}), 400
 
 @app.route('/admin/delete-image', methods=['POST'])
 @admin_required
-def admin_delete_image():
+def delete_image():
     filename = request.form.get('filename')
     if not filename:
-        flash('No filename provided', 'error')
-        return redirect(url_for('admin_settings'))
+        return jsonify({'error': 'No filename provided'}), 400
     
     try:
-        # Security check - prevent directory traversal
-        safe_filename = secure_filename(filename)
-        if safe_filename != filename:
-            flash('Invalid filename', 'error')
-            return redirect(url_for('admin_settings'))
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], safe_filename)
+        # Check if file exists
+        if not os.path.exists(filepath):
+            return jsonify({'error': 'File not found'}), 404
         
-        # Verify file exists and is in upload folder
-        if not os.path.exists(filepath) or not os.path.isfile(filepath):
-            flash('File not found', 'error')
-            return redirect(url_for('admin_settings'))
+        # Check if image is used in any products before deleting
+        with get_db() as conn:
+            c = conn.cursor()
+            c.execute("SELECT COUNT(*) FROM products WHERE image = ? OR images LIKE ?", 
+                     (filename, f'%{filename}%'))
+            in_use = c.fetchone()[0] > 0
+            
+            if in_use:
+                return jsonify({'error': 'Image is being used in products and cannot be deleted'}), 400
         
+        # Delete the file
         os.remove(filepath)
-        flash('Image deleted successfully!', 'success')
-    except Exception as e:
-        print(f"Error deleting image: {str(e)}")
-        flash('Failed to delete image', 'error')
+        return jsonify({'success': True})
     
-    return redirect(url_for('admin_settings'))
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+        
 
 
             
