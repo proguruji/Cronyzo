@@ -9351,628 +9351,793 @@ def admin_user_detail(user_id):
     ''', user=user, orders=orders)
 
 
-@app.route('/admin/settings', methods=['GET', 'POST'])
+        @app.route('/admin/settings', methods=['GET', 'POST'])
+
 @admin_required
+
 def admin_settings():
+
     if request.method == 'POST':
+
         try:
+
             # Update delivery charges
+
             new_charges = {}
+
             states = request.form.getlist('state[]')
+
             cities = request.form.getlist('city[]')
+
             charges = request.form.getlist('charge[]')
+
             
+
             for i in range(len(states)):
+
                 state = states[i]
+
                 city = cities[i]
+
                 charge = int(charges[i]) if charges[i] else 0
+
                 
+
                 if state not in new_charges:
+
                     new_charges[state] = {}
+
                 new_charges[state][city] = charge
+
             
+
             # In a real application, you would save this to a database or config file
+
             # For this example, we'll just update the global variable
+
             global DELIVERY_CHARGES
+
             DELIVERY_CHARGES = new_charges
+
             
+
             return redirect(url_for('admin_settings'))
+
         
+
         except Exception as e:
+
             print(f"Error updating settings: {e}")
+
             error = "Error updating settings"
+
     
+
     return render_template_string('''
+
         <!DOCTYPE html>
+
         <html>
+
         <head>
+
             <title>Settings - CRONYZO Admin</title>
+
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
             <style>
+
                 :root {
+
             --primary: #4361ee;
+
             --primary-dark: #3a0ca3;
+
             --accent: #f72585;
+
             --light: #f8f9fa;
+
             --dark: #212529;
+
             --success: #28a745;
+
             --danger: #dc3545;
+
             --warning: #ffc107;
+
             --info: #17a2b8;
+
         }
+
         
+
         body {
+
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+
             margin: 0;
+
             padding: 0;
+
             background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+
             color: var(--dark);
+
         }
+
         
+
         .admin-header {
+
             background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+
             color: white;
+
             padding: 15px 30px;
+
             display: flex;
+
             justify-content: space-between;
+
             align-items: center;
+
             box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+
             position: sticky;
+
             top: 0;
+
             z-index: 1000;
+
         }
+
         
+
         .admin-container {
+
             display: flex;
+
             min-height: calc(100vh - 65px);
+
         }
+
         
+
         .admin-sidebar {
+
             width: 280px;
+
             background: rgba(255,255,255,0.95);
+
             box-shadow: 2px 0 15px rgba(0,0,0,0.05);
+
             padding: 25px 0;
+
             backdrop-filter: blur(10px);
+
             border-right: 1px solid rgba(255,255,255,0.3);
+
             transition: all 0.3s ease;
+
         }
+
         
+
         .sidebar-menu {
+
             list-style: none;
+
             padding: 0;
+
             margin: 0;
+
         }
+
         
+
         .sidebar-menu li a {
+
             display: flex;
+
             align-items: center;
+
             padding: 14px 25px;
+
             color: var(--dark);
+
             text-decoration: none;
+
             transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+
             font-weight: 500;
+
             margin: 5px 15px;
+
             border-radius: 8px;
+
         }
+
         
+
         .sidebar-menu li a:hover {
+
             background: rgba(67, 97, 238, 0.1);
+
             color: var(--primary);
+
             transform: translateX(5px);
+
         }
+
         
+
         .sidebar-menu li a.active {
+
             background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+
             color: white;
+
             box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
+
         }
+
         
+
         .sidebar-menu li a i {
+
             margin-right: 12px;
+
             width: 20px;
+
             text-align: center;
+
             font-size: 18px;
+
         }
+
         
+
         .admin-content {
+
             flex: 1;
+
             padding: 30px;
+
         }
+
         
+
         .card {
+
             background: rgba(255,255,255,0.95);
+
             border-radius: 12px;
+
             padding: 25px;
+
             margin-bottom: 25px;
+
             box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+
             backdrop-filter: blur(10px);
+
             border: 1px solid rgba(255,255,255,0.3);
+
         }
+
         
+
         .card-header {
+
             display: flex;
+
             justify-content: space-between;
+
             align-items: center;
+
             margin-bottom: 25px;
+
             padding-bottom: 15px;
+
             border-bottom: 1px solid rgba(0,0,0,0.05);
+
         }
+
         
+
         .card-header h2 {
+
             margin: 0;
+
             font-size: 22px;
+
             font-weight: 600;
+
             color: var(--primary-dark);
+
         }
+
         
+
         .btn {
+
             display: inline-flex;
+
             align-items: center;
+
             justify-content: center;
+
             padding: 10px 20px;
+
             background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+
             color: white;
+
             text-decoration: none;
+
             border-radius: 8px;
+
             font-size: 14px;
+
             font-weight: 500;
+
             transition: all 0.3s;
+
             box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
+
             border: none;
+
             cursor: pointer;
+
         }
+
         
+
         .btn:hover {
+
             transform: translateY(-2px);
+
             box-shadow: 0 6px 20px rgba(67, 97, 238, 0.4);
+
         }
+
         
+
         .btn-sm {
+
             padding: 8px 15px;
+
             font-size: 13px;
+
         }
+
         
+
         .btn-danger {
+
             background: linear-gradient(135deg, var(--danger) 0%, #c82333 100%);
+
             box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+
         }
+
         
+
         .btn-danger:hover {
+
             box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+
         }
+
         
+
         .btn-success {
+
             background: linear-gradient(135deg, var(--success) 0%, #1e7e34 100%);
+
             box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+
         }
+
         
+
         .btn-success:hover {
+
             box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+
         }
+
         
+
         .alert {
+
             padding: 15px;
+
             border-radius: 8px;
+
             margin-bottom: 25px;
+
             display: flex;
+
             align-items: center;
+
             gap: 10px;
+
         }
+
         
+
         .alert-danger {
+
             background: rgba(248, 215, 218, 0.8);
+
             color: #721c24;
+
         }
+
         
+
         .delivery-charge-form {
+
             margin-bottom: 30px;
+
         }
+
         
+
         .delivery-charge-row {
+
             display: flex;
+
             gap: 15px;
+
             margin-bottom: 15px;
+
             align-items: center;
+
         }
+
         
+
         .delivery-charge-row input,
+
         .delivery-charge-row select {
+
             padding: 12px 15px;
+
             border: 1px solid rgba(0,0,0,0.1);
+
             border-radius: 8px;
+
             background: rgba(255,255,255,0.8);
+
             flex: 1;
+
             min-width: 150px;
+
         }
+
         
+
         .delivery-charge-row input:focus,
+
         .delivery-charge-row select:focus {
+
             outline: none;
+
             border-color: var(--primary);
+
             box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+
         }
+
         
+
         #deliveryChargesContainer {
+
             margin-top: 20px;
+
         }
+
         
+
         h3 {
+
             color: var(--primary-dark);
+
             margin-top: 25px;
+
             margin-bottom: 15px;
+
             font-size: 18px;
+
         }
+
         
+
         .text-right {
+
             text-align: right;
+
         }
+
         
+
         @media (max-width: 992px) {
+
             .admin-sidebar {
+
                 width: 220px;
+
             }
+
         }
+
         
+
         @media (max-width: 768px) {
+
             .admin-container {
+
                 flex-direction: column;
+
             }
+
             
+
             .admin-sidebar {
+
                 width: 100%;
+
                 padding: 15px 0;
+
             }
+
             
+
             .sidebar-menu {
+
                 display: flex;
+
                 overflow-x: auto;
+
                 padding: 0 15px;
+
             }
+
             
+
             .sidebar-menu li {
+
                 flex: 0 0 auto;
+
             }
+
             
+
             .sidebar-menu li a {
+
                 margin: 0 5px;
+
                 padding: 10px 15px;
+
             }
+
             
+
             .delivery-charge-row {
+
                 flex-direction: column;
+
                 align-items: stretch;
+
                 gap: 10px;
+
             }
+
         }
+
             </style>
+
             <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
         </head>
+
         <body>
+
             <div class="admin-header">
+
                 <h1>CRONYZO Admin</h1>
+
                 <div>
+
                     <a href="{{ url_for('admin_logout') }}" class="btn btn-danger">
+
                         <i class="fas fa-sign-out-alt"></i> Logout
+
                     </a>
+
                 </div>
+
             </div>
+
             
+
             <div class="admin-container">
+
                 <div class="admin-sidebar">
+
                     <ul class="sidebar-menu">
+
                         <li><a href="{{ url_for('admin_dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+
                         <li><a href="{{ url_for('admin_products') }}"><i class="fas fa-box-open"></i> Products</a></li>
+
                         <li><a href="{{ url_for('admin_orders') }}"><i class="fas fa-shopping-bag"></i> Orders</a></li>
+
                         <li><a href="{{ url_for('admin_users') }}"><i class="fas fa-users"></i> Users</a></li>
+
                         <li><a href="{{ url_for('admin_settings') }}" class="active"><i class="fas fa-cog"></i> Settings</a></li>
+
                     </ul>
+
                 </div>
+
                 
+
                 <div class="admin-content">
+
                     <div class="card">
+
                         <div class="card-header">
+
                             <h2>System Settings</h2>
+
                         </div>
+
                         
+
                         {% if error %}
+
                         <div class="alert alert-danger">
+
                             <i class="fas fa-exclamation-circle"></i> {{ error }}
+
                         </div>
+
                         {% endif %}
+
                         
+
                         <form method="post">
+
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
                             
+
                             <h3>Delivery Charges</h3>
+
                             <div id="deliveryChargesContainer">
+
                                 {% for state, cities in delivery_charges.items() %}
+
                                     {% for city, charge in cities.items() %}
+
                                     <div class="delivery-charge-row">
+
                                         <input type="text" name="state[]" placeholder="State" value="{{ state }}" required>
+
                                         <input type="text" name="city[]" placeholder="City" value="{{ city }}" required>
+
                                         <input type="number" name="charge[]" placeholder="Charge" value="{{ charge }}" min="0" required>
+
                                         <button type="button" class="btn btn-danger" onclick="removeDeliveryCharge(this)">
+
                                             <i class="fas fa-trash"></i>
+
                                         </button>
+
                                     </div>
+
                                     {% endfor %}
+
                                 {% endfor %}
+
                             </div>
+
                             
+
                             <button type="button" class="btn" onclick="addDeliveryCharge()" style="margin-top: 10px;">
+
                                 <i class="fas fa-plus"></i> Add Delivery Charge
+
                             </button>
+
                             
+
                             <div class="text-right" style="margin-top: 30px;">
+
                                 <button type="submit" class="btn btn-success">
+
                                     <i class="fas fa-save"></i> Save Settings
+
                                 </button>
+
                             </div>
+
                         </form>
+
                     </div>
+
                 </div>
+
             </div>
-            <!-- For the upload page -->
-<a href="/upload_image">
-  <button>Upload Image</button>
-</a>
 
-<!-- For the image list page -->
-<a href="/list_images">
-  <button>View All Images</button>
-</a>
+            
 
-<!-- For the admin management page -->
-<a href="/admin/images">
-  <button>Image Manager (Admin)</button>
-</a>
             <script>
+
                 function addDeliveryCharge() {
+
                     const container = document.getElementById('deliveryChargesContainer');
+
                     const newRow = document.createElement('div');
+
                     newRow.className = 'delivery-charge-row';
+
                     newRow.innerHTML = `
+
                         <input type="text" name="state[]" placeholder="State" required>
+
                         <input type="text" name="city[]" placeholder="City" required>
+
                         <input type="number" name="charge[]" placeholder="Charge" min="0" required>
+
                         <button type="button" class="btn btn-danger" onclick="removeDeliveryCharge(this)">
+
                             <i class="fas fa-trash"></i>
+
                         </button>
+
                     `;
+
                     container.appendChild(newRow);
+
                 }
+
                 
+
                 function removeDeliveryCharge(button) {
+
                     const row = button.parentElement;
+
                     row.remove();
+
                 }
+
             </script>
+
         </body>
+
         </html>
+
     ''', delivery_charges=DELIVERY_CHARGES, error=error if 'error' in locals() else None)
-    
-import os
-from werkzeug.utils import secure_filename
 
-# Configure upload settings
-app.config['UPLOAD_FOLDER'] = 'static/images'
-app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload size
 
-# Create upload folder if it doesn't exist
-if not os.path.exists(app.config['UPLOAD_FOLDER']):
-    os.makedirs(app.config['UPLOAD_FOLDER'])
 
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
-
-@app.route('/upload_image', methods=['POST'])
-def upload_image():
-    
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file part'}), 400
-    
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
-    
-    if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        # Add random string to filename to prevent overwrites
-        unique_filename = f"{secrets.token_hex(8)}_{filename}"
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
-        
-        try:
-            file.save(filepath)
-            return jsonify({
-                'success': True,
-                'filename': unique_filename,
-                'url': url_for('static', filename=f'images/{unique_filename}')
-            }), 200
-        except Exception as e:
-        return jsonify({'error': str(e)}), 500
-    
-    return jsonify({'error': 'File type not allowed'}), 400
-
-@app.route('/delete_image', methods=['POST'])
-def delete_image():
-    data = request.get_json()
-    if not data or 'filename' not in data:
-        return jsonify({'error': 'No filename provided'}), 400
-    
-    filename = data['filename']
-    if not filename or not isinstance(filename, str):
-        return jsonify({'error': 'Invalid filename'}), 400
-    
-    # Prevent directory traversal
-    if '/' in filename or '\\' in filename:
-        return jsonify({'error': 'Invalid filename'}), 400
-    
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    
-    if not os.path.exists(filepath):
-        return jsonify({'error': 'File not found'}), 404
-    
-    try:
-        os.remove(filepath)
-        return jsonify({'success': True}), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/list_images')
-def list_images():
-    try:
-        images = []
-        for filename in os.listdir(app.config['UPLOAD_FOLDER']):
-            if allowed_file(filename):
-                images.append({
-                    'name': filename,
-                    'url': url_for('static', filename=f'images/{filename}')
-                })
-        return jsonify({'images': images}), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-# Admin routes for image management
-@app.route('/admin/images')
-@csrf.exempt  # You might want to add proper admin authentication
-def admin_images():
-    try:
-        images = []
-        for filename in os.listdir(app.config['UPLOAD_FOLDER']):
-            if allowed_file(filename):
-                images.append({
-                    'name': filename,
-                    'url': url_for('static', filename=f'images/{filename}'),
-                    'size': os.path.getsize(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                })
-        return render_template_string('''
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Image Manager</title>
-                <style>
-                    body { font-family: Arial, sans-serif; margin: 20px; }
-                    .image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
-                    .image-card { border: 1px solid #ddd; padding: 10px; border-radius: 5px; }
-                    .image-card img { max-width: 100%; height: auto; }
-                    .actions { margin-top: 10px; display: flex; justify-content: space-between; }
-                    .upload-form { margin: 20px 0; padding: 20px; background: #f5f5f5; border-radius: 5px; }
-                </style>
-            </head>
-            <body>
-                <h1>Image Manager</h1>
-                
-                <div class="upload-form">
-                    <h2>Upload New Image</h2>
-                    <form id="uploadForm" enctype="multipart/form-data">
-                        <input type="file" name="file" id="fileInput" required>
-                        <button type="submit">Upload</button>
-                    </form>
-                    <div id="uploadStatus"></div>
-                </div>
-                
-                <h2>Existing Images</h2>
-                <div class="image-grid" id="imageGrid">
-                    {% for image in images %}
-                    <div class="image-card">
-                        <img src="{{ image.url }}" alt="{{ image.name }}">
-                        <div>{{ image.name }}</div>
-                        <div>{{ (image.size / 1024)|round(2) }} KB</div>
-                        <div class="actions">
-                            <button onclick="copyUrl('{{ image.url }}')">Copy URL</button>
-                            <button onclick="deleteImage('{{ image.name }}')" style="color: red;">Delete</button>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                
-                <script>
-                    document.getElementById('uploadForm').addEventListener('submit', async function(e) {
-                        e.preventDefault();
-                        const fileInput = document.getElementById('fileInput');
-                        const formData = new FormData();
-                        formData.append('file', fileInput.files[0]);
-                        
-                        const statusDiv = document.getElementById('uploadStatus');
-                        statusDiv.textContent = 'Uploading...';
-                        statusDiv.style.color = 'blue';
-                        
-                        
-                            
-                            try {
-    const response = await fetch('/upload_image', {
-        method: 'POST',
-        body: formData
-    });
-    
-    // First check if response is JSON
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
-        throw new Error(text || 'Invalid response from server');
-    }
-    
-    const data = await response.json();
-                            
-                            if (data.success) {
-                                statusDiv.textContent = 'Upload successful!';
-                                statusDiv.style.color = 'green';
-                                // Reload the page to show the new image
-                                setTimeout(() => location.reload(), 1000);
-                            } else {
-                                statusDiv.textContent = 'Error: ' + (data.error || 'Upload failed');
-                                statusDiv.style.color = 'red';
-                            }
-
-                        } catch (error) {
-    statusDiv.textContent = 'Error: ' + error.message;
-    statusDiv.style.color = 'red';
-}
-                    });
-                    
-                    function copyUrl(url) {
-                        navigator.clipboard.writeText(url)
-                            .then(() => alert('URL copied to clipboard'))
-                            .catch(err => alert('Failed to copy URL: ' + err));
-                    }
-                    
-                    async function deleteImage(filename) {
-                        if (!confirm('Are you sure you want to delete this image?')) return;
-                        
-                        try {
-                            const response = await fetch('/delete_image', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                },
-                                body: JSON.stringify({ filename: filename })
-                            });
-                            
-                            const data = await response.json();
-                            
-                            if (data.success) {
-                                alert('Image deleted successfully');
-                                location.reload();
-                            } else {
-                                alert('Error: ' + (data.error || 'Delete failed'));
-                            }
-                        } catch (error) {
-                            alert('Error: ' + error.message);
-                        }
-                    }
-                </script>
-            </body>
-            </html>
-        ''', images=images)
-    except Exception as e:
-        return f"Error: {str(e)}", 500
 # ==================== END ADMIN PANEL ====================
+
 if __name__ == '__main__':
+
     if not os.path.exists('static'):
+
         os.makedirs('static')
+
     if not os.path.exists('static/images'):
+
         os.makedirs('static/images')
+
     app.run(debug=True)
+
     app.config['WTF_CSRF_ENABLED'] = False
+            
