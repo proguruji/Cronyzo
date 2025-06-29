@@ -9769,7 +9769,7 @@ def allowed_file(filename):
 
 @app.route('/upload_image', methods=['POST'])
 def upload_image():
-    try:
+    
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
     
