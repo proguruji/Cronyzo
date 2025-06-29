@@ -9342,6 +9342,7 @@ def admin_user_detail(user_id):
         </html>
     ''', user=user, orders=orders)
 
+
 @app.route('/admin/settings', methods=['GET', 'POST'])
 @admin_required
 def admin_settings():
@@ -9363,7 +9364,6 @@ def admin_settings():
                 new_charges[state][city] = charge
             
             # In a real application, you would save this to a database or config file
-            # For this example, we'll just update the global variable
             global DELIVERY_CHARGES
             DELIVERY_CHARGES = new_charges
             
@@ -9372,6 +9372,15 @@ def admin_settings():
         except Exception as e:
             print(f"Error updating settings: {e}")
             error = "Error updating settings"
+    
+    # Get list of images in the upload folder
+    image_files = []
+    try:
+        image_files = [f for f in os.listdir(app.config['UPLOAD_FOLDER']) 
+                     if os.path.isfile(os.path.join(app.config['UPLOAD_FOLDER'], f)) and 
+                     allowed_file(f)]
+    except Exception as e:
+        print(f"Error reading image directory: {e}")
     
     return render_template_string('''
         <!DOCTYPE html>
@@ -9555,6 +9564,11 @@ def admin_settings():
             color: #721c24;
         }
         
+        .alert-success {
+            background: rgba(212, 237, 218, 0.8);
+            color: #155724;
+        }
+        
         .delivery-charge-form {
             margin-bottom: 30px;
         }
@@ -9598,6 +9612,49 @@ def admin_settings():
             text-align: right;
         }
         
+        .image-manager {
+            margin-top: 30px;
+        }
+        
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .image-card {
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 8px;
+            padding: 10px;
+            transition: all 0.3s;
+        }
+        
+        .image-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .image-preview {
+            width: 100%;
+            height: 120px;
+            object-fit: contain;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+        
+        .image-actions {
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .file-upload-form {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(248, 249, 250, 0.5);
+            border-radius: 8px;
+        }
+        
         @media (max-width: 992px) {
             .admin-sidebar {
                 width: 220px;
@@ -9633,6 +9690,10 @@ def admin_settings():
                 flex-direction: column;
                 align-items: stretch;
                 gap: 10px;
+            }
+            
+            .image-grid {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
             }
         }
             </style>
@@ -9671,6 +9732,16 @@ def admin_settings():
                         </div>
                         {% endif %}
                         
+                        {% with messages = get_flashed_messages(with_categories=true) %}
+                            {% if messages %}
+                                {% for category, message in messages %}
+                                <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }}">
+                                    <i class="fas fa-{{ 'check-circle' if category == 'success' else 'exclamation-circle' }}"></i> {{ message }}
+                                </div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endwith %}
+                        
                         <form method="post">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             
@@ -9700,34 +9771,51 @@ def admin_settings():
                                 </button>
                             </div>
                         </form>
+                        
+                        <div class="image-manager">
+                            <h3>Image Manager</h3>
+                            <p>Upload and manage product images</p>
+                            
+                            <form method="post" action="{{ url_for('admin_upload_image') }}" enctype="multipart/form-data" class="file-upload-form">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <div style="display: flex; gap: 15px; align-items: center;">
+                                    <input type="file" name="file" id="fileInput" style="flex: 1;" required>
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-upload"></i> Upload
+                                    </button>
+                                </div>
+                                <small class="file-upload-info">Allowed formats: JPG, PNG, GIF. Max size: 5MB</small>
+                            </form>
+                            
+                            {% if image_files %}
+                            <div class="image-grid">
+                                {% for image in image_files %}
+                                <div class="image-card">
+                                    <img src="{{ url_for('static', filename='images/' + image) }}" class="image-preview" alt="{{ image }}">
+                                    <div class="image-actions">
+                                        <a href="{{ url_for('static', filename='images/' + image) }}" target="_blank" class="btn btn-sm">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <form method="post" action="{{ url_for('admin_delete_image') }}" style="display: inline;">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="filename" value="{{ image }}">
+                                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this image?');">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                    <div style="font-size: 12px; text-align: center; margin-top: 5px; word-break: break-all;">{{ image }}</div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <p>No images found in the upload directory.</p>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
             </div>
-          <!-- File Management Section -->
-                <div style="margin: 30px 0; padding: 20px 0; border-top: 1px solid #eee;">
-                    <h2>File Management</h2>
-                    
-                    <!-- Upload Form -->
-                    <form id="uploadForm" enctype="multipart/form-data" style="margin-bottom: 20px;">
-                        <input type="file" id="fileInput" name="file" multiple accept=".png,.jpg,.jpeg,.gif,.svg" style="margin-bottom: 10px;">
-                        <button type="submit" class="btn">
-                            <i class="fas fa-upload"></i> Upload Files
-                        </button>
-                    </form>
-                    
-                    <!-- Existing Images -->
-                    <h3>Existing Images</h3>
-                    <div class="image-container">
-                        {% for image in existing_images %}
-                        <div class="image-item">
-                            <img src="/static/images/{{ image }}" class="image-thumbnail" alt="{{ image }}">
-                            <button class="delete-btn" onclick="deleteImage('{{ image }}')">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
+            
             <script>
                 function addDeliveryCharge() {
                     const container = document.getElementById('deliveryChargesContainer');
@@ -9748,123 +9836,46 @@ def admin_settings():
                     const row = button.parentElement;
                     row.remove();
                 }
-                    // Image Upload Function
-                document.getElementById('uploadForm').addEventListener('submit', async function(e) {
-                    e.preventDefault();
-                    const fileInput = document.getElementById('fileInput');
-                    
-                    if (fileInput.files.length === 0) {
-                        alert('Please select files first');
-                        return;
-                    }
-                    
-                    const formData = new FormData();
-                    for (let i = 0; i < fileInput.files.length; i++) {
-                        formData.append('file', fileInput.files[i]);
-                    }
-                    
-                    try {
-                        const response = await fetch('/admin/upload', {
-                            method: 'POST',
-                            body: formData
-                        });
-                        
-                        const data = await response.json();
-                        
-                        if (data.error) {
-                            alert('Error: ' + data.error);
-                        } else {
-                            alert('Successfully uploaded ' + data.files.length + ' file(s)');
-                            location.reload(); // Refresh to show new images
-                        }
-                    } catch (error) {
-                        alert('Upload failed: ' + error);
-                    }
-                });
-                
-                // Image Delete Function
-                function deleteImage(filename) {
-                    if (confirm('Are you sure you want to delete ' + filename + '?')) {
-                        fetch('/admin/delete-image/' + encodeURIComponent(filename), {
-                            method: 'POST',
-                            headers: {
-                                'X-CSRFToken': '{{ csrf_token() }}'
-                            }
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                location.reload(); // Refresh to update image list
-                            } else {
-                                alert('Error: ' + (data.error || 'Failed to delete image'));
-                            }
-                        })
-                        .catch(error => {
-                            alert('Delete failed: ' + error);
-                        });
-                    }
-                }
             </script>
         </body>
         </html>
-    ''',delivery_charges=DELIVERY_CHARGES, error=error if 'error' in locals() else None, existing_images=existing_images)
-    
+    ''', delivery_charges=DELIVERY_CHARGES, error=error if 'error' in locals() else None, image_files=image_files)
 
-@app.route('/admin/upload', methods=['POST'])
-def handle_upload():
-    if not session.get('is_admin'):
-        return jsonify({'error': 'Unauthorized'}), 401
-    
+@app.route('/admin/upload-image', methods=['POST'])
+@admin_required
+def admin_upload_image():
     if 'file' not in request.files:
-        return jsonify({'error': 'No files selected'}), 400
+        flash('No file part', 'error')
+        return redirect(url_for('admin_settings'))
+    
+    file = request.files['file']
+    if file.filename == '':
+        flash('No selected file', 'error')
+        return redirect(url_for('admin_settings'))
+    
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        try:
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            flash('Image uploaded successfully', 'success')
+        except Exception as e:
+            flash(f'Error uploading image: {str(e)}', 'error')
+    else:
+        flash('Allowed file types are: png, jpg, jpeg, gif', 'error')
+    
+    return redirect(url_for('admin_settings'))
+
+@app.route('/admin/delete-image', methods=['POST'])
+@admin_required
+def admin_delete_image():
+    filename = request.form.get('filename')
+    if not filename:
+        flash('No filename provided', 'error')
+        return redirect(url_for('admin_settings'))
+    
+    
+            
         
-    files = request.files.getlist('file')
-    if not files or files[0].filename == '':
-        return jsonify({'error': 'No files selected'}), 400
-    
-    upload_dir = os.path.join('static', 'images')
-    os.makedirs(upload_dir, exist_ok=True)
-    
-    uploaded_files = []
-    for file in files:
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            base, ext = os.path.splitext(filename)
-            counter = 1
-            while os.path.exists(os.path.join(upload_dir, filename)):
-                filename = f"{base}_{counter}{ext}"
-                counter += 1
-                
-            file.save(os.path.join(upload_dir, filename))
-            uploaded_files.append(filename)
-    
-    if not uploaded_files:
-        return jsonify({'error': 'No valid files (allowed: PNG, JPG, GIF, SVG)'}), 400
-    
-    return jsonify({
-        'message': 'Files uploaded successfully',
-        'files': uploaded_files,
-        'path': '/static/images/'
-    })
-
-@app.route('/admin/delete-image/<filename>', methods=['POST'])
-def delete_image(filename):
-    if not session.get('is_admin'):
-        return jsonify({'error': 'Unauthorized'}), 401
-    
-    try:
-        filepath = os.path.join('static', 'images', secure_filename(filename))
-        if os.path.exists(filepath):
-            os.remove(filepath)
-            return jsonify({'success': True})
-        return jsonify({'error': 'File not found'}), 404
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in {'png', 'jpg', 'jpeg', 'gif', 'svg'}
-  
 
 # ==================== END ADMIN PANEL ====================
 if __name__ == '__main__':
