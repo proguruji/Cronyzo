@@ -9733,7 +9733,6 @@ def admin_settings():
 
 
 
-
 # ==================== IMAGE MANAGEMENT ====================
 
 @app.route('/admin/images')
@@ -9743,6 +9742,11 @@ def admin_images():
     try:
         image_files = []
         images_dir = os.path.join(app.static_folder, 'images')
+        
+        # Create images directory if it doesn't exist
+        if not os.path.exists(images_dir):
+            os.makedirs(images_dir)
+            
         for filename in os.listdir(images_dir):
             if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp')):
                 image_files.append({
@@ -9751,6 +9755,7 @@ def admin_images():
                     'size': os.path.getsize(os.path.join(images_dir, filename)),
                     'upload_time': datetime.fromtimestamp(
                         os.path.getmtime(os.path.join(images_dir, filename))
+                    )
                 })
     except Exception as e:
         print(f"Error listing images: {e}")
@@ -9891,24 +9896,29 @@ def admin_images():
 @admin_required
 def admin_upload_image():
     if 'image' not in request.files:
+        flash('No file part', 'error')
         return redirect(url_for('admin_images'))
     
     file = request.files['image']
     if file.filename == '':
+        flash('No selected file', 'error')
         return redirect(url_for('admin_images'))
     
     if file and allowed_file(file.filename):
-        # Secure the filename and ensure it's unique
         filename = secure_filename(file.filename)
         base, ext = os.path.splitext(filename)
         unique_filename = f"{base}_{secrets.token_hex(4)}{ext}"
         
-        # Save the file
-        images_dir = os.path.join(app.static_folder, 'images')
-        file.save(os.path.join(images_dir, unique_filename))
+        try:
+            images_dir = os.path.join(app.static_folder, 'images')
+            file.save(os.path.join(images_dir, unique_filename))
+            flash('Image uploaded successfully!', 'success')
+        except Exception as e:
+            flash(f'Error uploading image: {str(e)}', 'error')
         
         return redirect(url_for('admin_images'))
     
+    flash('Invalid file type', 'error')
     return redirect(url_for('admin_images'))
 
 @app.route('/admin/images/delete', methods=['POST'])
@@ -9916,24 +9926,27 @@ def admin_upload_image():
 def admin_delete_image():
     image_name = request.form.get('image_name')
     if not image_name:
+        flash('No image specified', 'error')
         return redirect(url_for('admin_images'))
     
     try:
         image_path = os.path.join(app.static_folder, 'images', image_name)
         if os.path.exists(image_path):
             os.remove(image_path)
+            flash('Image deleted successfully!', 'success')
+        else:
+            flash('Image not found', 'error')
     except Exception as e:
-        print(f"Error deleting image: {e}")
+        flash(f'Error deleting image: {str(e)}', 'error')
     
     return redirect(url_for('admin_images'))
 
-# Update the allowed_file function to include more image formats
 def allowed_file(filename):
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
     return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in {'png', 'jpg', 'jpeg', 'gif', 'webp'}
-           
-           
-           # app.py में if __name__ == '__main__' से पहले
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+# Create images directory if it doesn't exist
 if not os.path.exists(os.path.join(app.static_folder, 'images')):
     os.makedirs(os.path.join(app.static_folder, 'images'))
 
