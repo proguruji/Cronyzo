@@ -9703,26 +9703,31 @@ def admin_settings():
                     </div>
                 </div>
             </div>
-        <!-- File Upload Button Section -->
-<div style="margin: 30px 0; padding: 20px 0; border-top: 1px solid #eee;">
-    <h3 style="margin-bottom: 15px;">File Upload</h3>
-    <a href="/file-uploader-Xk9pL3mN" 
-       style="display: inline-block;
-              padding: 12px 25px;
-              background: linear-gradient(135deg, #4361ee, #3a0ca3);
-              color: white;
-              text-decoration: none;
-              border-radius: 6px;
-              font-weight: 500;
-              transition: all 0.3s;
-              box-shadow: 0 4px 12px rgba(67, 97, 238, 0.2);">
-       <i class="fas fa-cloud-upload-alt" style="margin-right: 8px;"></i> 
-       Upload Files
-    </a>
-    <p style="color: #666; margin-top: 10px; font-size: 14px;">
-       Upload product images, banners and media files (PNG, JPG, GIF, SVG)
-    </p>
-</div>
+          <!-- File Management Section -->
+                <div style="margin: 30px 0; padding: 20px 0; border-top: 1px solid #eee;">
+                    <h2>File Management</h2>
+                    
+                    <!-- Upload Form -->
+                    <form id="uploadForm" enctype="multipart/form-data" style="margin-bottom: 20px;">
+                        <input type="file" id="fileInput" name="file" multiple accept=".png,.jpg,.jpeg,.gif,.svg" style="margin-bottom: 10px;">
+                        <button type="submit" class="btn">
+                            <i class="fas fa-upload"></i> Upload Files
+                        </button>
+                    </form>
+                    
+                    <!-- Existing Images -->
+                    <h3>Existing Images</h3>
+                    <div class="image-container">
+                        {% for image in existing_images %}
+                        <div class="image-item">
+                            <img src="/static/images/{{ image }}" class="image-thumbnail" alt="{{ image }}">
+                            <button class="delete-btn" onclick="deleteImage('{{ image }}')">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
             <script>
                 function addDeliveryCharge() {
                     const container = document.getElementById('deliveryChargesContainer');
@@ -9743,279 +9748,122 @@ def admin_settings():
                     const row = button.parentElement;
                     row.remove();
                 }
-            </script>
-        </body>
-        </html>
-    ''', delivery_charges=DELIVERY_CHARGES, error=error if 'error' in locals() else None)
-
-@app.route('/file-uploader-Xk9pL3mN')  # Hard-to-guess unique path
-def secret_uploader():
-    if not session.get('is_admin'):
-        return redirect(url_for('admin_login'))
-    
-    return render_template_string('''
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>File Uploader - CRONYZO Admin</title>
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <style>
-                :root {
-                    --primary: #4361ee;
-                    --primary-dark: #3a0ca3;
-                    --accent: #f72585;
-                    --light: #f8f9fa;
-                    --dark: #212529;
-                }
-                
-                body {
-                    font-family: 'Segoe UI', Arial, sans-serif;
-                    margin: 0;
-                    padding: 0;
-                    background: #f5f7fa;
-                }
-                
-                .admin-container {
-                    max-width: 1200px;
-                    margin: 0 auto;
-                    padding: 20px;
-                }
-                
-                .upload-container {
-                    border: 2px dashed #ccc;
-                    padding: 30px;
-                    text-align: center;
-                    border-radius: 8px;
-                    margin-bottom: 20px;
-                    position: relative;
-                    transition: all 0.3s;
-                }
-                
-                .upload-container:hover {
-                    border-color: var(--primary);
-                }
-                
-                .upload-container input {
-                    position: absolute;
-                    width: 100%;
-                    height: 100%;
-                    top: 0;
-                    left: 0;
-                    opacity: 0;
-                    cursor: pointer;
-                }
-                
-                .btn {
-                    padding: 12px 25px;
-                    background: var(--primary);
-                    color: white;
-                    border: none;
-                    border-radius: 8px;
-                    cursor: pointer;
-                    font-size: 16px;
-                }
-                
-                .alert {
-                    padding: 15px;
-                    border-radius: 8px;
-                    margin: 20px 0;
-                }
-                
-                .alert-success {
-                    background: #d4edda;
-                    color: #155724;
-                }
-                
-                .alert-danger {
-                    background: #f8d7da;
-                    color: #721c24;
-                }
-            </style>
-            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-        </head>
-        <body>
-            <div class="admin-container">
-                <h1><i class="fas fa-file-upload"></i> File Uploader</h1>
-                
-                <div class="admin-nav">
-                    <a href="{{ url_for('admin_dashboard') }}" class="btn"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
-                </div>
-                
-                <div class="admin-section">
-                    <form id="uploadForm" enctype="multipart/form-data">
-                        <div class="upload-container">
-                            <div class="upload-icon">
-                                <i class="fas fa-cloud-upload-alt fa-3x" style="color: var(--primary);"></i>
-                            </div>
-                            <h3>Click to upload files</h3>
-                            <p>or drag and drop files here</p>
-                            <input type="file" id="fileInput" name="file" multiple accept=".png,.jpg,.jpeg,.gif,.webp,.svg">
-                        </div>
-                        
-                        <button type="submit" class="btn">
-                            <i class="fas fa-upload"></i> Upload Files
-                        </button>
-                    </form>
-                    
-                    <div id="uploadStatus"></div>
-                </div>
-            </div>
-            
-            <script>
+                    // Image Upload Function
                 document.getElementById('uploadForm').addEventListener('submit', async function(e) {
                     e.preventDefault();
-                    
                     const fileInput = document.getElementById('fileInput');
-                    const uploadStatus = document.getElementById('uploadStatus');
                     
                     if (fileInput.files.length === 0) {
-                        uploadStatus.innerHTML = `
-                            <div class="alert alert-danger">
-                                <i class="fas fa-exclamation-circle"></i> Please select at least one file
-                            </div>
-                        `;
+                        alert('Please select files first');
                         return;
                     }
                     
-                    // Validate file types before upload
-                    const allowedTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/svg+xml'];
-                    for (let file of fileInput.files) {
-                        if (!allowedTypes.includes(file.type)) {
-                            uploadStatus.innerHTML = `
-                                <div class="alert alert-danger">
-                                    <i class="fas fa-exclamation-circle"></i> Invalid file type: ${file.name}
-                                </div>
-                            `;
-                            return;
-                        }
+                    const formData = new FormData();
+                    for (let i = 0; i < fileInput.files.length; i++) {
+                        formData.append('file', fileInput.files[i]);
                     }
                     
-                    uploadStatus.innerHTML = `
-                        <div class="alert alert-info">
-                            <i class="fas fa-spinner fa-spin"></i> Uploading ${fileInput.files.length} file(s)...
-                        </div>
-                    `;
-                    
                     try {
-                        const formData = new FormData();
-                        for (let i = 0; i < fileInput.files.length; i++) {
-                            formData.append('file', fileInput.files[i]);
-                        }
-                        
                         const response = await fetch('/admin/upload', {
                             method: 'POST',
-                            body: formData,
-                            headers: {
-                                'X-CSRFToken': '{{ csrf_token() }}'
-                            }
+                            body: formData
                         });
                         
                         const data = await response.json();
                         
                         if (data.error) {
-                            uploadStatus.innerHTML = `
-                                <div class="alert alert-danger">
-                                    <i class="fas fa-exclamation-circle"></i> ${data.error}
-                                </div>
-                            `;
+                            alert('Error: ' + data.error);
                         } else {
-                            uploadStatus.innerHTML = `
-                                <div class="alert alert-success">
-                                    <i class="fas fa-check-circle"></i> 
-                                    Successfully uploaded ${data.files.length} file(s) to /static/images/
-                                    <ul style="margin-top: 10px;">
-                                        ${data.files.map(file => `<li>${file}</li>`).join('')}
-                                    </ul>
-                                </div>
-                            `;
-                            fileInput.value = '';
+                            alert('Successfully uploaded ' + data.files.length + ' file(s)');
+                            location.reload(); // Refresh to show new images
                         }
                     } catch (error) {
-                        uploadStatus.innerHTML = `
-                            <div class="alert alert-danger">
-                                <i class="fas fa-exclamation-circle"></i> Upload failed: ${error}
-                            </div>
-                        `;
+                        alert('Upload failed: ' + error);
                     }
                 });
                 
-                // Enhanced drag and drop
-                const uploadContainer = document.querySelector('.upload-container');
-                
-                uploadContainer.addEventListener('dragover', (e) => {
-                    e.preventDefault();
-                    uploadContainer.style.borderColor = 'var(--primary)';
-                    uploadContainer.style.backgroundColor = 'rgba(67, 97, 238, 0.1)';
-                });
-                
-                uploadContainer.addEventListener('dragleave', () => {
-                    uploadContainer.style.borderColor = '#ccc';
-                    uploadContainer.style.backgroundColor = 'transparent';
-                });
-                
-                uploadContainer.addEventListener('drop', (e) => {
-                    e.preventDefault();
-                    uploadContainer.style.borderColor = '#ccc';
-                    uploadContainer.style.backgroundColor = 'transparent';
-                    
-                    const fileInput = document.getElementById('fileInput');
-                    fileInput.files = e.dataTransfer.files;
-                    
-                    if (fileInput.files.length > 0) {
-                        uploadContainer.querySelector('h3').textContent = 
-                            `${fileInput.files.length} file(s) selected`;
+                // Image Delete Function
+                function deleteImage(filename) {
+                    if (confirm('Are you sure you want to delete ' + filename + '?')) {
+                        fetch('/admin/delete-image/' + encodeURIComponent(filename), {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRFToken': '{{ csrf_token() }}'
+                            }
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                location.reload(); // Refresh to update image list
+                            } else {
+                                alert('Error: ' + (data.error || 'Failed to delete image'));
+                            }
+                        })
+                        .catch(error => {
+                            alert('Delete failed: ' + error);
+                        });
                     }
-                });
+                }
             </script>
         </body>
         </html>
-    ''')
+    ''',delivery_charges=DELIVERY_CHARGES, error=error if 'error' in locals() else None, existing_images=existing_images)
+    
 
 @app.route('/admin/upload', methods=['POST'])
-def admin_upload():
+def handle_upload():
     if not session.get('is_admin'):
         return jsonify({'error': 'Unauthorized'}), 401
     
     if 'file' not in request.files:
-        return jsonify({'error': 'No file part'}), 400
+        return jsonify({'error': 'No files selected'}), 400
         
     files = request.files.getlist('file')
     if not files or files[0].filename == '':
-        return jsonify({'error': 'No selected files'}), 400
+        return jsonify({'error': 'No files selected'}), 400
     
-    upload_folder = os.path.join('static', 'images')
-    os.makedirs(upload_folder, exist_ok=True)
+    upload_dir = os.path.join('static', 'images')
+    os.makedirs(upload_dir, exist_ok=True)
     
     uploaded_files = []
     for file in files:
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
-            filepath = os.path.join(upload_folder, filename)
-            
-            # Prevent overwriting existing files
+            base, ext = os.path.splitext(filename)
             counter = 1
-            name, ext = os.path.splitext(filename)
-            while os.path.exists(filepath):
-                filename = f"{name}_{counter}{ext}"
-                filepath = os.path.join(upload_folder, filename)
+            while os.path.exists(os.path.join(upload_dir, filename)):
+                filename = f"{base}_{counter}{ext}"
                 counter += 1
-            
-            file.save(filepath)
+                
+            file.save(os.path.join(upload_dir, filename))
             uploaded_files.append(filename)
     
     if not uploaded_files:
-        return jsonify({'error': 'No valid files uploaded (allowed: png, jpg, jpeg, gif, webp, svg)'}), 400
+        return jsonify({'error': 'No valid files (allowed: PNG, JPG, GIF, SVG)'}), 400
     
     return jsonify({
         'message': 'Files uploaded successfully',
         'files': uploaded_files,
-        'path': f'/static/images/'
+        'path': '/static/images/'
     })
 
+@app.route('/admin/delete-image/<filename>', methods=['POST'])
+def delete_image(filename):
+    if not session.get('is_admin'):
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    try:
+        filepath = os.path.join('static', 'images', secure_filename(filename))
+        if os.path.exists(filepath):
+            os.remove(filepath)
+            return jsonify({'success': True})
+        return jsonify({'error': 'File not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 def allowed_file(filename):
-    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'}
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-                    
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in {'png', 'jpg', 'jpeg', 'gif', 'svg'}
   
 
 # ==================== END ADMIN PANEL ====================
