@@ -9712,7 +9712,20 @@ def admin_settings():
                     </div>
                 </div>
             </div>
-            
+            <!-- For the upload page -->
+<a href="/upload_image">
+  <button>Upload Image</button>
+</a>
+
+<!-- For the image list page -->
+<a href="/list_images">
+  <button>View All Images</button>
+</a>
+
+<!-- For the admin management page -->
+<a href="/admin/images">
+  <button>Image Manager (Admin)</button>
+</a>
             <script>
                 function addDeliveryCharge() {
                     const container = document.getElementById('deliveryChargesContainer');
