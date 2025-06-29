@@ -9884,29 +9884,31 @@ def admin_settings():
 @admin_required
 def admin_upload_image():
     if 'file' not in request.files:
-        flash('No file part', 'error')
+        flash('No file selected', 'error')
         return redirect(url_for('admin_settings'))
     
     file = request.files['file']
     
     if file.filename == '':
-        flash('No selected file', 'error')
+        flash('No file selected', 'error')
         return redirect(url_for('admin_settings'))
     
-    if file and allowed_file(file.filename):
-        try:
-            # Generate a unique filename to prevent collisions
-            ext = file.filename.rsplit('.', 1)[1].lower()
-            filename = f"{uuid.uuid4().hex}.{ext}"
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            
-            file.save(filepath)
-            flash('Image uploaded successfully', 'success')
-        except Exception as e:
-            print(f"Error uploading image: {e}")
-            flash(f'Error uploading image: {str(e)}', 'error')
-    else:
-        flash('Allowed file types are: png, jpg, jpeg, gif, webp', 'error')
+    if not allowed_file(file.filename):
+        flash('Invalid file type. Allowed: PNG, JPG, JPEG, GIF, WEBP', 'error')
+        return redirect(url_for('admin_settings'))
+    
+    try:
+        # Generate unique filename
+        filename = secure_filename(file.filename)
+        unique_filename = f"{uuid.uuid4().hex}_{filename}"
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+        
+        # Save file
+        file.save(filepath)
+        flash('Image uploaded successfully!', 'success')
+    except Exception as e:
+        print(f"Error uploading image: {str(e)}")
+        flash('Failed to upload image', 'error')
     
     return redirect(url_for('admin_settings'))
 
@@ -9919,20 +9921,28 @@ def admin_delete_image():
         return redirect(url_for('admin_settings'))
     
     try:
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        # Security check - prevent directory traversal
+        safe_filename = secure_filename(filename)
+        if safe_filename != filename:
+            flash('Invalid filename', 'error')
+            return redirect(url_for('admin_settings'))
         
-        # Security check to prevent directory traversal
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], safe_filename)
+        
+        # Verify file exists and is in upload folder
         if not os.path.exists(filepath) or not os.path.isfile(filepath):
             flash('File not found', 'error')
             return redirect(url_for('admin_settings'))
         
         os.remove(filepath)
-        flash('Image deleted successfully', 'success')
+        flash('Image deleted successfully!', 'success')
     except Exception as e:
-        print(f"Error deleting image: {e}")
-        flash(f'Error deleting image: {str(e)}', 'error')
+        print(f"Error deleting image: {str(e)}")
+        flash('Failed to delete image', 'error')
     
     return redirect(url_for('admin_settings'))
+
+
             
         
 
