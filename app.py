@@ -9350,79 +9350,37 @@ def admin_user_detail(user_id):
         </html>
     ''', user=user, orders=orders)
 
+
 @app.route('/admin/settings', methods=['GET', 'POST'])
-
 @admin_required
-
 def admin_settings():
-
     if request.method == 'POST':
-
         try:
-
             # Update delivery charges
-
             new_charges = {}
-
             states = request.form.getlist('state[]')
-
             cities = request.form.getlist('city[]')
-
             charges = request.form.getlist('charge[]')
-
             
-
             for i in range(len(states)):
-
                 state = states[i]
-
                 city = cities[i]
-
                 charge = int(charges[i]) if charges[i] else 0
-
                 
-
                 if state not in new_charges:
-
                     new_charges[state] = {}
-
                 new_charges[state][city] = charge
-
             
-
             # In a real application, you would save this to a database or config file
-
             # For this example, we'll just update the global variable
-
             global DELIVERY_CHARGES
-
             DELIVERY_CHARGES = new_charges
-
             
-
             return redirect(url_for('admin_settings'))
-
         
-
         except Exception as e:
-
             print(f"Error updating settings: {e}")
-
             error = "Error updating settings"
-
-    
-         # Get list of uploaded images
-    try:
-        image_files = []
-        for f in os.listdir(app.config['UPLOAD_FOLDER']):
-            if os.path.isfile(os.path.join(app.config['UPLOAD_FOLDER'], f)) and allowed_file(f):
-                image_files.append(f)
-    except Exception as e:
-        print(f"Error reading upload directory: {str(e)}")
-        image_files = []
-        flash('Error reading uploaded images', 'error')
-
-
     
     return render_template_string('''
         <!DOCTYPE html>
@@ -9606,11 +9564,6 @@ def admin_settings():
             color: #721c24;
         }
         
-        .alert-success {
-            background: rgba(212, 237, 218, 0.8);
-            color: #155724;
-        }
-        
         .delivery-charge-form {
             margin-bottom: 30px;
         }
@@ -9654,49 +9607,6 @@ def admin_settings():
             text-align: right;
         }
         
-        .image-manager {
-            margin-top: 30px;
-        }
-        
-        .image-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
-        }
-        
-        .image-card {
-            border: 1px solid rgba(0,0,0,0.1);
-            border-radius: 8px;
-            padding: 10px;
-            transition: all 0.3s;
-        }
-        
-        .image-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-        
-        .image-preview {
-            width: 100%;
-            height: 120px;
-            object-fit: contain;
-            margin-bottom: 10px;
-            border-radius: 4px;
-        }
-        
-        .image-actions {
-            display: flex;
-            justify-content: space-between;
-        }
-        
-        .file-upload-form {
-            margin-top: 20px;
-            padding: 20px;
-            background: rgba(248, 249, 250, 0.5);
-            border-radius: 8px;
-        }
-        
         @media (max-width: 992px) {
             .admin-sidebar {
                 width: 220px;
@@ -9732,10 +9642,6 @@ def admin_settings():
                 flex-direction: column;
                 align-items: stretch;
                 gap: 10px;
-            }
-            
-            .image-grid {
-                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
             }
         }
             </style>
@@ -9774,16 +9680,6 @@ def admin_settings():
                         </div>
                         {% endif %}
                         
-                        {% with messages = get_flashed_messages(with_categories=true) %}
-                            {% if messages %}
-                                {% for category, message in messages %}
-                                <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }}">
-                                    <i class="fas fa-{{ 'check-circle' if category == 'success' else 'exclamation-circle' }}"></i> {{ message }}
-                                </div>
-                                {% endfor %}
-                            {% endif %}
-                        {% endwith %}
-                        
                         <form method="post">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             
@@ -9813,49 +9709,9 @@ def admin_settings():
                                 </button>
                             </div>
                         </form>
-                        
-                                
-        <div class="image-manager">
-            <h3>Image Manager</h3>
-            
-            <form method="post" action="{{ url_for('admin_upload_image') }}" enctype="multipart/form-data" class="file-upload-form">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="upload-container">
-                    <input type="file" name="file" id="fileInput" required>
-                    <button type="submit" class="btn btn-success">
-                        <i class="fas fa-upload"></i> Upload Image
-                    </button>
-                </div>
-                <small>Allowed: JPG, PNG, GIF, WEBP (Max 16MB)</small>
-            </form>
-            
-            {% if image_files %}
-            <div class="image-grid">
-                {% for image in image_files %}
-                <div class="image-card">
-                    <img src="{{ url_for('static', filename='uploads/' + image) }}" 
-                         class="image-preview" 
-                         alt="{{ image }}"
-                         onerror="this.src='{{ url_for('static', filename='images/placeholder.jpg') }}'">
-                    <div class="image-info">
-                        <span>{{ image }}</span>
-                        <form method="post" action="{{ url_for('admin_delete_image') }}">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="filename" value="{{ image }}">
-                            <button type="submit" class="btn btn-danger btn-sm" 
-                                    onclick="return confirm('Delete this image?')">
-                                <i class="fas fa-trash"></i> Delete
-                            </button>
-                        </form>
                     </div>
                 </div>
-                {% endfor %}
             </div>
-            {% else %}
-            <p>No images uploaded yet.</p>
-            {% endif %}
-        </div>
-         
             
             <script>
                 function addDeliveryCharge() {
@@ -9880,74 +9736,7 @@ def admin_settings():
             </script>
         </body>
         </html>
-    ''', delivery_charges=DELIVERY_CHARGES, error=error if 'error' in locals() else None, image_files=image_files)
-
-
-app.route('/admin/upload', methods=['POST'])
-@admin_required
-def upload_image():
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file part'}), 400
-    
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
-    
-    if file and allowed_file(file.filename):
-        try:
-            # Secure the filename and make it unique
-            filename = secure_filename(file.filename)
-            base, ext = os.path.splitext(filename)
-            unique_filename = f"{base}_{int(time.time())}{ext}"
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
-            
-            # Save the file
-            file.save(filepath)
-            
-            # Return the relative URL for the image
-            image_url = url_for('static', filename=f'images/{unique_filename}')
-            return jsonify({'success': True, 'url': image_url, 'filename': unique_filename})
-        
-        except Exception as e:
-            return jsonify({'error': str(e)}), 500
-    else:
-        return jsonify({'error': 'File type not allowed'}), 400
-
-@app.route('/admin/delete-image', methods=['POST'])
-@admin_required
-def delete_image():
-    filename = request.form.get('filename')
-    if not filename:
-        return jsonify({'error': 'No filename provided'}), 400
-    
-    try:
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        
-        # Check if file exists
-        if not os.path.exists(filepath):
-            return jsonify({'error': 'File not found'}), 404
-        
-        # Check if image is used in any products before deleting
-        with get_db() as conn:
-            c = conn.cursor()
-            c.execute("SELECT COUNT(*) FROM products WHERE image = ? OR images LIKE ?", 
-                     (filename, f'%{filename}%'))
-            in_use = c.fetchone()[0] > 0
-            
-            if in_use:
-                return jsonify({'error': 'Image is being used in products and cannot be deleted'}), 400
-        
-        # Delete the file
-        os.remove(filepath)
-        return jsonify({'success': True})
-    
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-        
-
-
-            
-        
+    ''', delivery_charges=DELIVERY_CHARGES, error=error if 'error' in locals() else None)
 
 # ==================== END ADMIN PANEL ====================
 if __name__ == '__main__':
