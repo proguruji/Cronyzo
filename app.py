@@ -149,6 +149,8 @@ DELIVERY_CHARGES = {
 
 
 
+
+
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload size
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
@@ -156,6 +158,10 @@ app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 # Create upload folder if it doesn't exist
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
 def get_related_products(product_id, category=None, limit=4):
     try:
@@ -9367,11 +9373,12 @@ def admin_settings():
             global DELIVERY_CHARGES
             DELIVERY_CHARGES = new_charges
             
+            flash('Settings updated successfully', 'success')
             return redirect(url_for('admin_settings'))
         
         except Exception as e:
             print(f"Error updating settings: {e}")
-            error = "Error updating settings"
+            flash('Error updating settings', 'error')
     
     # Get list of images in the upload folder
     image_files = []
@@ -9381,6 +9388,7 @@ def admin_settings():
                      allowed_file(f)]
     except Exception as e:
         print(f"Error reading image directory: {e}")
+        flash('Error reading image directory', 'error')
     
     return render_template_string('''
         <!DOCTYPE html>
@@ -9772,49 +9780,47 @@ def admin_settings():
                             </div>
                         </form>
                         
-                        <div class="image-manager">
-                            <h3>Image Manager</h3>
-                            <p>Upload and manage product images</p>
-                            
-                            <form method="post" action="{{ url_for('admin_upload_image') }}" enctype="multipart/form-data" class="file-upload-form">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <div style="display: flex; gap: 15px; align-items: center;">
-                                    <input type="file" name="file" id="fileInput" style="flex: 1;" required>
-                                    <button type="submit" class="btn btn-success">
-                                        <i class="fas fa-upload"></i> Upload
-                                    </button>
-                                </div>
-                                <small class="file-upload-info">Allowed formats: JPG, PNG, GIF. Max size: 5MB</small>
-                            </form>
-                            
-                            {% if image_files %}
-                            <div class="image-grid">
-                                {% for image in image_files %}
-                                <div class="image-card">
-                                    <img src="{{ url_for('static', filename='images/' + image) }}" class="image-preview" alt="{{ image }}">
-                                    <div class="image-actions">
-                                        <a href="{{ url_for('static', filename='images/' + image) }}" target="_blank" class="btn btn-sm">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        <form method="post" action="{{ url_for('admin_delete_image') }}" style="display: inline;">
-                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                            <input type="hidden" name="filename" value="{{ image }}">
-                                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this image?');">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </form>
-                                    </div>
-                                    <div style="font-size: 12px; text-align: center; margin-top: 5px; word-break: break-all;">{{ image }}</div>
-                                </div>
-                                {% endfor %}
-                            </div>
-                            {% else %}
-                            <p>No images found in the upload directory.</p>
-                            {% endif %}
-                        </div>
+                         <div class="image-manager">
+                <h3>Image Manager</h3>
+                <p>Upload and manage product images</p>
+                
+                <form method="post" action="{{ url_for('admin_upload_image') }}" enctype="multipart/form-data" class="file-upload-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <input type="file" name="file" id="fileInput" style="flex: 1;" required>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-upload"></i> Upload
+                        </button>
                     </div>
+                    <small class="file-upload-info">Allowed formats: JPG, PNG, GIF, WEBP. Max size: 16MB</small>
+                </form>
+                
+                {% if image_files %}
+                <div class="image-grid">
+                    {% for image in image_files %}
+                    <div class="image-card">
+                        <img src="{{ url_for('static', filename='uploads/' + image) }}" class="image-preview" alt="{{ image }}">
+                        <div class="image-actions">
+                            <a href="{{ url_for('static', filename='uploads/' + image) }}" target="_blank" class="btn btn-sm">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <form method="post" action="{{ url_for('admin_delete_image') }}" style="display: inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="filename" value="{{ image }}">
+                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this image?');">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                        <div style="font-size: 12px; text-align: center; margin-top: 5px; word-break: break-all;">{{ image }}</div>
+                    </div>
+                    {% endfor %}
                 </div>
+                {% else %}
+                <p>No images found in the upload directory.</p>
+                {% endif %}
             </div>
+            
             
             <script>
                 function addDeliveryCharge() {
@@ -9849,19 +9855,25 @@ def admin_upload_image():
         return redirect(url_for('admin_settings'))
     
     file = request.files['file']
+    
     if file.filename == '':
         flash('No selected file', 'error')
         return redirect(url_for('admin_settings'))
     
     if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
         try:
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            # Generate a unique filename to prevent collisions
+            ext = file.filename.rsplit('.', 1)[1].lower()
+            filename = f"{uuid.uuid4().hex}.{ext}"
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            
+            file.save(filepath)
             flash('Image uploaded successfully', 'success')
         except Exception as e:
+            print(f"Error uploading image: {e}")
             flash(f'Error uploading image: {str(e)}', 'error')
     else:
-        flash('Allowed file types are: png, jpg, jpeg, gif', 'error')
+        flash('Allowed file types are: png, jpg, jpeg, gif, webp', 'error')
     
     return redirect(url_for('admin_settings'))
 
@@ -9873,7 +9885,21 @@ def admin_delete_image():
         flash('No filename provided', 'error')
         return redirect(url_for('admin_settings'))
     
+    try:
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        
+        # Security check to prevent directory traversal
+        if not os.path.exists(filepath) or not os.path.isfile(filepath):
+            flash('File not found', 'error')
+            return redirect(url_for('admin_settings'))
+        
+        os.remove(filepath)
+        flash('Image deleted successfully', 'success')
+    except Exception as e:
+        print(f"Error deleting image: {e}")
+        flash(f'Error deleting image: {str(e)}', 'error')
     
+    return redirect(url_for('admin_settings'))
             
         
 
