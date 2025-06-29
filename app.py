@@ -9747,13 +9747,15 @@ def admin_images():
         images_dir = os.path.join(app.static_folder, 'images')
         for filename in os.listdir(images_dir):
             if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp')):
-                image_files.append({
-                    'name': filename,
-                    'path': os.path.join('images', filename),
-                    'size': os.path.getsize(os.path.join(images_dir, filename)),
-                    'upload_time': datetime.fromtimestamp(
-                        os.path.getmtime(os.path.join(images_dir, filename))
-                })
+                # गलत कोड (लाइन 8-13)
+image_files.append({
+    'name': filename,
+    'path': os.path.join('images', filename),
+    'size': os.path.getsize(os.path.join(images_dir, filename)),
+    'upload_time': datetime.fromtimestamp(
+        os.path.getmtime(os.path.join(images_dir, filename))
+    )  # यहाँ ')' जोड़ें
+})
     except Exception as e:
         print(f"Error listing images: {e}")
         image_files = []
