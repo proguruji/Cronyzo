@@ -897,20 +897,58 @@ body {
     
     .product-image { height: 110px; }
 }
-.site-header {
-  background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
-  padding: 20px 0;
-  text-align: center;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+.brand-header {
+  background: linear-gradient(135deg, #3a0ca3 0%, #4361ee 100%);
+  padding: 15px 0;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
-.site-title {
-  color: white;
+.brand-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  padding: 0 20px;
+}
+
+.brand-logo {
+  width: 45px;
+  height: 45px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
+  transition: transform 0.3s ease;
+}
+
+.brand-logo:hover {
+  transform: scale(1.1);
+}
+
+.brand-title {
   margin: 0;
-  font-size: 2.5rem;
-  font-weight: bold;
-  text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: white;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.2);
   font-family: 'Segoe UI', Arial, sans-serif;
+  transition: text-shadow 0.3s ease;
+}
+
+.brand-title:hover {
+  text-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
+/* For mobile responsiveness */
+@media (max-width: 768px) {
+  .brand-title {
+    font-size: 1.5rem;
+  }
+  .brand-logo {
+    width: 38px;
+    height: 38px;
+  }
 }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -918,7 +956,12 @@ body {
 <body>
     <div class="header">
     <div class="site-header">
-  <h1 class="site-title">Cronyzo</h1>
+<div class="brand-header">
+  <div class="brand-container">
+    <img src="icon.png" alt="Cronyzo Logo" class="brand-logo">
+    <h1 class="brand-title">Cronyzo</h1>
+  </div>
+</div>
 </div>
         <div class="navbar desktop-nav">
             <a href="/">CRONYZO</a>
