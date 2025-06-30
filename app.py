@@ -897,11 +897,29 @@ body {
     
     .product-image { height: 110px; }
 }
+.site-header {
+  background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+  padding: 20px 0;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.site-title {
+  color: white;
+  margin: 0;
+  font-size: 2.5rem;
+  font-weight: bold;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+  font-family: 'Segoe UI', Arial, sans-serif;
+}
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <div class="header">
+    <div class="site-header">
+  <h1 class="site-title">Cronyzo</h1>
+</div>
         <div class="navbar desktop-nav">
             <a href="/">CRONYZO</a>
             <div>
