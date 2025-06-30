@@ -539,7 +539,7 @@ def index():
         body { 
             font-family: 'Segoe UI', Arial, sans-serif; 
             margin: 0; 
-            padding: 0; 
+            padding: 5px; 
             background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
             min-height: 100vh;
         }
