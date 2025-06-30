@@ -958,7 +958,7 @@ body {
     <div class="site-header">
 <div class="brand-header">
   <div class="brand-container">
-    <img src="icon.png" alt="Cronyzo Logo" class="brand-logo">
+    <img src="/static/images/icon.png" alt="Cronyzo Logo" class="brand-logo">
     <h1 class="brand-title">Cronyzo</h1>
   </div>
 </div>
