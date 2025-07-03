@@ -2416,8 +2416,8 @@ def cart():
                 <p><strong>Subtotal:</strong> ₹{{ "{:,.2f}".format(subtotal) }}</p>
                 <p>Delivery charge will be calculated at checkout</p>
                 
-                <a href="{{ url_for('checkout') }}" class="checkout-btn {% if subtotal < 25000 %}disabled{% endif %}">
-                    Proceed to Checkout {% if subtotal < 25000 %}(Min ₹25,000){% endif %}
+                <a href="{{ url_for('checkout') }}" class="checkout-btn {% if subtotal < 5000 %}disabled{% endif %}">
+                    Proceed to Checkout {% if subtotal < 5000 %}(Min ₹5,000){% endif %}
                 </a>
                 <a href="{{ url_for('index') }}" class="continue-shopping">Continue Shopping</a>
             </div>
