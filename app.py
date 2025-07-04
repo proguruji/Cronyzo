@@ -898,56 +898,70 @@ body {
     .product-image { height: 110px; }
 }
 .brand-header {
-  background: linear-gradient(135deg, #3a0ca3 0%, #4361ee 100%);
-  padding: 15px 0;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  background: linear-gradient(135deg, #240046 0%, #5f0f40 50%, #3f37c9 100%);
+  padding: 20px 0;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
 }
 
 .brand-container {
-  max-width: 1200px;
+  max-width: 1280px;
   margin: 0 auto;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 15px;
-  padding: 0 20px;
+  justify-content: start;
+  gap: 20px;
+  padding: 0 24px;
 }
 
 .brand-logo {
-  width: 45px;
-  height: 30px;
-  object-fit: contain;
-  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
-  transition: transform 0.3s ease;
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  transition: transform 0.4s ease, box-shadow 0.3s ease;
 }
 
 .brand-logo:hover {
-  transform: scale(1.1);
+  transform: scale(1.15) rotate(2deg);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
 }
 
 .brand-title {
   margin: 0;
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: white;
-  letter-spacing: 0.5px;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.2);
-  font-family: 'Segoe UI', Arial, sans-serif;
-  transition: text-shadow 0.3s ease;
+  font-size: 2rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 1px;
+  font-family: 'Poppins', 'Segoe UI', sans-serif;
+  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  transition: color 0.3s ease, text-shadow 0.3s ease;
 }
 
 .brand-title:hover {
-  text-shadow: 0 2px 5px rgba(0,0,0,0.3);
+  color: #ffeedd;
+  text-shadow: 0 4px 10px rgba(255, 255, 255, 0.2);
 }
 
-/* For mobile responsiveness */
+/* Mobile Responsive */
 @media (max-width: 768px) {
   .brand-title {
-    font-size: 1.5rem;
+    font-size: 1.4rem;
   }
+
   .brand-logo {
-    width: 38px;
-    height: 38px;
+    width: 40px;
+    height: 40px;
+  }
+
+  .brand-container {
+    gap: 12px;
+    padding: 0 16px;
   }
 }
     </style>
