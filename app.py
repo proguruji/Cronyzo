@@ -552,7 +552,7 @@ body {
 
 .header { 
     background: rgba(255,255,255,0.95); 
-    padding: 15px; 
+    padding: 10px; 
     box-shadow: 0 4px 30px rgba(0,0,0,0.1);
     position: sticky; 
     top: 0; 
@@ -915,7 +915,7 @@ body {
 
 .brand-logo {
   width: 45px;
-  height: 45px;
+  height: 30px;
   object-fit: contain;
   filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
   transition: transform 0.3s ease;
