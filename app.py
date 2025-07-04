@@ -920,6 +920,7 @@ body {
 
 .brand-logo {
   width: 50px;
+  padding: 5px 0;
   height: 50px;
   object-fit: cover;
   border-radius: 8px;
