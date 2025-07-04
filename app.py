@@ -897,61 +897,97 @@ body {
     
     .product-image { height: 110px; }
 }
+
+
 .brand-header {
-  background: linear-gradient(135deg, #240046 0%, #5f0f40 50%, #3f37c9 100%);
-  padding: 20px 0;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(6px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, 
+    rgba(36, 0, 70, 0.95) 0%, 
+    rgba(95, 15, 64, 0.95) 50%, 
+    rgba(63, 55, 201, 0.95) 100%);
+  padding: 15px 24px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(12px) saturate(180%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
   position: sticky;
-  top: 0;
+  top: 12px; /* Added space from top */
   z-index: 1000;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  border-radius: 16px; /* Rounded corners */
+  margin: 0 24px; /* Margin to prevent touching edges */
 }
 
 .brand-container {
-  max-width: 1280px;
+  max-width: 1440px;
   margin: 0 auto;
   display: flex;
   align-items: center;
-  justify-content: start;
-  gap: 20px;
-  padding: 0 24px;
-  border-radius: 15px;
+  justify-content: space-between;
+}
+
+.brand-content {
+  display: flex;
+  align-items: center;
+  gap: 24px;
 }
 
 .brand-logo {
-  width: 50px;
-  padding: 5px 0;
-  height: 50px;
-  object-fit: cover;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-  transition: transform 0.4s ease, box-shadow 0.3s ease;
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  border-radius: 14px; /* Slightly more rounded */
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+  background: rgba(255, 255, 255, 0.1);
+  padding: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .brand-logo:hover {
-  transform: scale(1.15) rotate(2deg);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+  transform: scale(1.1);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .brand-title {
   margin: 0;
-  font-size: 2rem;
-  font-weight: 800;
+  font-size: 1.8rem;
+  font-weight: 700;
   color: #ffffff;
-  letter-spacing: 1px;
-  font-family: 'Poppins', 'Segoe UI', sans-serif;
-  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-  transition: color 0.3s ease, text-shadow 0.3s ease;
+  letter-spacing: 0.5px;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  position: relative;
 }
 
-.brand-title:hover {
-  color: #ffeedd;
-  text-shadow: 0 4px 10px rgba(255, 255, 255, 0.2);
+.brand-title::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.7), transparent);
+  border-radius: 2px;
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.4s ease;
+}
+
+.brand-title:hover::after {
+  transform: scaleX(1);
+  transform-origin: left;
 }
 
 /* Mobile Responsive */
 @media (max-width: 768px) {
+  .brand-header {
+    top: 8px;
+    margin: 0 12px;
+    padding: 12px 16px;
+    border-radius: 12px;
+  }
+  
   .brand-title {
     font-size: 1.4rem;
   }
@@ -959,11 +995,11 @@ body {
   .brand-logo {
     width: 40px;
     height: 40px;
+    border-radius: 10px;
   }
 
-  .brand-container {
-    gap: 12px;
-    padding: 0 16px;
+  .brand-content {
+    gap: 16px;
   }
 }
     </style>
