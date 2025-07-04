@@ -916,7 +916,7 @@ body {
   justify-content: start;
   gap: 20px;
   padding: 0 24px;
-  border-radius: 10px;
+  border-radius: 15px;
 }
 
 .brand-logo {
