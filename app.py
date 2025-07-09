@@ -523,8 +523,54 @@ def index():
 <html>
 <head>
     <title>CRONYZO</title>
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+<!-- CSRF Token (for Flask with Jinja2) -->
+<meta name="csrf-token" content="{{ csrf_token() }}">
+
+<!-- Viewport -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Favicon (icon.png inside static/images/) -->
+<link rel="icon" href="{{ url_for('static', filename='images/icon.png') }}" type="image/png">
+
+<!-- SEO Meta Tags -->
+<meta name="description" content="CRONYZO par paayein wholesale mein saree, shirt aur kai tarah ke saman apni shop ke liye. Sasti aur achhi quality ke saath ghar baithe order karein.">
+<meta name="keywords" content="cronyzo, wholesale saree, thok saman, surat saree, shirt, cheap saree, cronyzo.shop, reseller platform, online thok bazar">
+<meta name="author" content="CRONYZO">
+<meta name="robots" content="index, follow">
+
+<!-- Canonical URL -->
+<link rel="canonical" href="https://www.cronyzo.shop/">
+
+<!-- Open Graph (Facebook, WhatsApp etc.) -->
+<meta property="og:title" content="CRONYZO - Ghar Baithe Thok Mein Kharidein">
+<meta property="og:description" content="CRONYZO ek trusted wholesale platform hai jahan aap ghar baithe business ke liye saman le sakte hain - Saree, Shirt aur aur bhi bahut kuch.">
+<meta property="og:image" content="{{ url_for('static', filename='images/icon.png') }}">
+<meta property="og:url" content="https://www.cronyzo.shop/">
+<meta property="og:type" content="website">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="CRONYZO - Thok Mein Ghar Baithe Kharidein">
+<meta name="twitter:description" content="Sasti aur badiya quality ke products paayein directly factory se - CRONYZO">
+<meta name="twitter:image" content="{{ url_for('static', filename='images/icon.png') }}">
+
+<!-- JSON-LD Structured Data (Google ke liye) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "CRONYZO",
+  "url": "https://www.cronyzo.shop",
+  "logo": "https://www.cronyzo.shop/static/images/icon.png",
+  "sameAs": [
+    "https://www.instagram.com/cronyzo",
+    "https://www.facebook.com/cronyzo"
+  ]
+}
+</script>
+     
     <style>
 
         :root {
