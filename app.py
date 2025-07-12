@@ -3034,34 +3034,53 @@ def checkout():
             <span>Account</span>
         </a>
     </div>
+
     
     <style>
         .search-input {
             width: 100%;
-            padding: 10px;
-            margin-bottom: 5px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
+            padding: 12px;
+            margin-bottom: 8px;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        .search-input:focus {
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
+            outline: none;
         }
         
         .dropdown-select {
             width: 100%;
             padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-            height: auto;
-            max-height: 200px;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 16px;
+            max-height: 250px;
             overflow-y: auto;
         }
         
         .dropdown-select option {
-            padding: 8px;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            transition: all 0.2s;
         }
         
         .dropdown-select option:hover {
-            background-color: #f5f5f5;
+            background-color: #ebf8ff;
+        }
+        
+        .no-match {
+            color: #a0aec0 !important;
+        }
+        
+        .no-match-message {
+            color: #e53e3e !important;
+            font-style: italic;
+            padding: 10px;
         }
     </style>
     
@@ -3084,47 +3103,94 @@ def checkout():
             }
             
             updateDeliveryCharge();
+            
+            // Add event listeners for better UX
+            document.getElementById('state-search').addEventListener('focus', function() {
+                this.select();
+            });
+            
+            document.getElementById('city-search').addEventListener('focus', function() {
+                this.select();
+            });
         });
         
+        // Smart search function with fuzzy matching
         function filterDropdown(searchId, dropdownId) {
             const input = document.getElementById(searchId);
-            const filter = input.value.toUpperCase();
+            const searchTerm = input.value.trim().toLowerCase().replace(/\s+/g, ' ');
             const select = document.getElementById(dropdownId);
             const options = select.options;
             
+            // Remove previous no-match message if exists
+            const existingNoMatch = select.querySelector('.no-match-message');
+            if (existingNoMatch) {
+                select.removeChild(existingNoMatch);
+            }
+            
             // Show all options when search is empty
-            if (filter === '') {
+            if (searchTerm === '') {
                 for (let i = 0; i < options.length; i++) {
                     options[i].style.display = '';
+                    options[i].classList.remove('no-match');
+                    options[i].innerHTML = options[i].textContent; // Remove highlighting
                 }
                 return;
             }
             
-            // Filter options
+            // Smart matching algorithm
             let hasMatches = false;
             for (let i = 0; i < options.length; i++) {
                 const option = options[i];
-                const text = option.textContent || option.innerText;
-                if (text.toUpperCase().indexOf(filter) > -1) {
+                if (option.value === '') continue; // Skip the "Select" option
+                
+                const optionText = (option.textContent || option.innerText)
+                    .toLowerCase()
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g, "") // Remove accents
+                    .replace(/\s+/g, ' '); // Normalize spaces
+                
+                // Remove all non-alphanumeric characters for better matching
+                const cleanOptionText = optionText.replace(/[^a-z0-9\s]/g, '');
+                const cleanSearchTerm = searchTerm.replace(/[^a-z0-9\s]/g, '');
+                
+                // Smart matching conditions:
+                const searchWords = cleanSearchTerm.split(' ');
+                const optionWords = cleanOptionText.split(' ');
+                
+                // 1. Check if all search words are present in option (in any order)
+                const allWordsMatch = searchWords.every(word => 
+                    word.length > 0 && optionWords.some(optionWord => optionWord.includes(word))
+                );
+                
+                // 2. Check for fuzzy match (partial character sequence)
+                const fuzzyMatch = cleanSearchTerm.length > 2 && 
+                    cleanSearchTerm.split('').every((char, index) => 
+                        index === 0 || cleanOptionText.includes(char)
+                    );
+                
+                if (allWordsMatch || fuzzyMatch) {
                     option.style.display = '';
+                    option.classList.remove('no-match');
                     hasMatches = true;
+                    
+                    // Highlight matching parts
+                    const regex = new RegExp(`(${searchWords.join('|')})`, 'gi');
+                    option.innerHTML = option.textContent.replace(regex, '<strong>$1</strong>');
                 } else {
                     option.style.display = 'none';
+                    option.classList.add('no-match');
                 }
             }
             
-            // If no matches, show a message
-            if (!hasMatches) {
+            // If no matches, show a helpful message
+            if (!hasMatches && searchTerm.length > 1) {
                 const noResults = document.createElement('option');
                 noResults.value = '';
-                noResults.textContent = 'No matching results';
+                noResults.innerHTML = 'No matching results found for "<strong>' + 
+                    searchTerm + '</strong>"';
+                noResults.classList.add('no-match-message');
                 noResults.style.display = '';
                 select.appendChild(noResults);
-                setTimeout(() => {
-                    if (select.contains(noResults)) {
-                        select.removeChild(noResults);
-                    }
-                }, 2000);
             }
         }
         
@@ -3161,6 +3227,8 @@ def checkout():
         }
     </script>
 </body>
+            
+        
 </html>
                     
                 
@@ -3176,7 +3244,7 @@ def place_order():
     
     try:
         name = request.form['name']
-        phone = request.form['phone']
+        phone = relquest.form['phone']
         state = request.form['state']
         city = request.form['city']
         address = request.form['address']
