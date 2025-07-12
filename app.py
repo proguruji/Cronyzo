@@ -166,6 +166,8 @@ def get_all_categories():
         return []
 
 
+    # Then in your index route, add categories to the context
+categories = get_all_categories()
 # Create upload folder if it doesn't exist
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
@@ -531,8 +533,7 @@ def index():
     if 'cart' not in session:
         session['cart'] = {}
 
-    # Then in your index route, add categories to the context
-categories = get_all_categories()
+
     return render_template_string('''
         <!DOCTYPE html>
 <html>
