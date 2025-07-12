@@ -2899,7 +2899,8 @@ def checkout():
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-<body>
+
+    <body>
     <div class="header">
         <div class="navbar desktop-nav">
             <a href="/">CRONYZO</a>
@@ -2936,6 +2937,7 @@ def checkout():
                     
                     <div class="form-group">
                         <label>State</label>
+                        <input type="text" id="state-search" placeholder="Search State..." onkeyup="filterDropdown('state-search', 'state')">
                         <select id="state" name="state" required onchange="updateDeliveryCharge()">
                             <option value="">Select State</option>
                             {% for state in delivery_charges.keys() %}
@@ -2946,6 +2948,7 @@ def checkout():
                     
                     <div class="form-group">
                         <label>City</label>
+                        <input type="text" id="city-search" placeholder="Search City..." onkeyup="filterDropdown('city-search', 'city')">
                         <select id="city" name="city" required onchange="updateDeliveryCharge()">
                             <option value="">Select City</option>
                             {% if user_profile and user_profile['state'] %}
@@ -2962,8 +2965,8 @@ def checkout():
                     </div>
                     
                     <div class="payment-section">
-                        <h3>Advance Payment (50%)</h3>
-                        <p>Please pay 50% advance via PhonePe QR code:</p>
+                        <h3>Advance Payment (Delivery Charge Only)</h3>
+                        <p>Please pay the delivery charge via PhonePe QR code:</p>
                         <div class="qr-code">
                             <img src="{{ url_for('static', filename='images/scaner.png') }}" alt="PhonePe QR Code">
                         </div>
@@ -2975,16 +2978,16 @@ def checkout():
                     
                     <div class="payment-summary">
                         <div id="delivery-charge-display">
-                            <span>Delivery Charge:</span>
+                            <span>Delivery Charge (Advance Payment):</span>
                             <span>₹0</span>
                         </div>
                         <div id="total-amount-display">
-                            <span>Total Amount:</span>
+                            <span>Product Amount (Cash on Delivery):</span>
                             <span>₹{{ "{:,.2f}".format(subtotal) }}</span>
                         </div>
-                        <div id="advance-payment-display">
-                            <span>Advance Payment (50%):</span>
-                            <span>₹{{ "{:,.2f}".format(subtotal * 0.5) }}</span>
+                        <div id="total-payable-display">
+                            <span>Total Payable:</span>
+                            <span>₹{{ "{:,.2f}".format(subtotal) }}</span>
                         </div>
                     </div>
                     
@@ -3036,6 +3039,22 @@ def checkout():
         const deliveryCharges = {{ delivery_charges|tojson }};
         const subtotal = {{ subtotal }};
         
+        function filterDropdown(searchId, dropdownId) {
+            const input = document.getElementById(searchId);
+            const filter = input.value.toUpperCase();
+            const select = document.getElementById(dropdownId);
+            const options = select.getElementsByTagName('option');
+            
+            for (let i = 0; i < options.length; i++) {
+                const txtValue = options[i].textContent || options[i].innerText;
+                if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                    options[i].style.display = "";
+                } else {
+                    options[i].style.display = "none";
+                }
+            }
+        }
+        
         document.getElementById('state').addEventListener('change', function() {
             const state = this.value;
             const citySelect = document.getElementById('city');
@@ -3050,6 +3069,10 @@ def checkout():
                     citySelect.appendChild(option);
                 }
             }
+            
+            // Reset city search
+            document.getElementById('city-search').value = '';
+            updateDeliveryCharge();
         });
         
         function updateDeliveryCharge() {
@@ -3061,15 +3084,12 @@ def checkout():
                 charge = deliveryCharges[state][city];
             }
             
-            const totalAmount = subtotal + charge;
-            const advancePayment = totalAmount * 0.5;
-            
             document.getElementById('delivery-charge-display').innerHTML = 
-                `<span>Delivery Charge:</span><span>₹${charge.toLocaleString('en-IN')}</span>`;
+                `<span>Delivery Charge (Advance Payment):</span><span>₹${charge.toLocaleString('en-IN')}</span>`;
             document.getElementById('total-amount-display').innerHTML = 
-                `<span>Total Amount:</span><span>₹${totalAmount.toLocaleString('en-IN')}</span>`;
-            document.getElementById('advance-payment-display').innerHTML = 
-                `<span>Advance Payment (50%):</span><span>₹${advancePayment.toLocaleString('en-IN')}</span>`;
+                `<span>Product Amount (Cash on Delivery):</span><span>₹${subtotal.toLocaleString('en-IN')}</span>`;
+            document.getElementById('total-payable-display').innerHTML = 
+                `<span>Total Payable:</span><span>₹${(subtotal).toLocaleString('en-IN')}</span>`;
         }
         
         // Initialize delivery charge if state/city is pre-selected
@@ -3082,7 +3102,9 @@ def checkout():
         });
     </script>
 </body>
-</html>
+</html>               
+                    
+                
     ''', cart=session['cart'], subtotal=subtotal, delivery_charges=DELIVERY_CHARGES, user_profile=user_profile)
 
 @app.route('/place_order', methods=['POST'])
