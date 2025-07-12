@@ -2900,7 +2900,7 @@ def checkout():
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 
-    <body>
+  <body>
     <div class="header">
         <div class="navbar desktop-nav">
             <a href="/">CRONYZO</a>
@@ -2937,8 +2937,8 @@ def checkout():
                     
                     <div class="form-group">
                         <label>State</label>
-                        <input type="text" id="state-search" placeholder="Search State..." onkeyup="filterDropdown('state-search', 'state')">
-                        <select id="state" name="state" required onchange="updateDeliveryCharge()">
+                        <input type="text" id="state-search" placeholder="Type to search state..." class="search-input" onkeyup="filterDropdown('state-search', 'state')">
+                        <select id="state" name="state" required onchange="updateDeliveryCharge(); loadCities()" class="dropdown-select">
                             <option value="">Select State</option>
                             {% for state in delivery_charges.keys() %}
                             <option value="{{ state }}" {% if user_profile and user_profile['state'] == state %}selected{% endif %}>{{ state }}</option>
@@ -2948,8 +2948,8 @@ def checkout():
                     
                     <div class="form-group">
                         <label>City</label>
-                        <input type="text" id="city-search" placeholder="Search City..." onkeyup="filterDropdown('city-search', 'city')">
-                        <select id="city" name="city" required onchange="updateDeliveryCharge()">
+                        <input type="text" id="city-search" placeholder="Type to search city..." class="search-input" onkeyup="filterDropdown('city-search', 'city')">
+                        <select id="city" name="city" required onchange="updateDeliveryCharge()" class="dropdown-select">
                             <option value="">Select City</option>
                             {% if user_profile and user_profile['state'] %}
                                 {% for city in delivery_charges[user_profile['state']].keys() %}
@@ -2979,15 +2979,15 @@ def checkout():
                     <div class="payment-summary">
                         <div id="delivery-charge-display">
                             <span>Delivery Charge (Advance Payment):</span>
-                            <span>₹0</span>
+                            <span id="delivery-charge-value">₹0</span>
                         </div>
                         <div id="total-amount-display">
                             <span>Product Amount (Cash on Delivery):</span>
                             <span>₹{{ "{:,.2f}".format(subtotal) }}</span>
                         </div>
                         <div id="total-payable-display">
-                            <span>Total Payable:</span>
-                            <span>₹{{ "{:,.2f}".format(subtotal) }}</span>
+                            <strong>Total Payable:</strong>
+                            <strong>₹{{ "{:,.2f}".format(subtotal) }}</strong>
                         </div>
                     </div>
                     
@@ -3035,45 +3035,118 @@ def checkout():
         </a>
     </div>
     
+    <style>
+        .search-input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        
+        .dropdown-select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            height: auto;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .dropdown-select option {
+            padding: 8px;
+        }
+        
+        .dropdown-select option:hover {
+            background-color: #f5f5f5;
+        }
+    </style>
+    
     <script>
         const deliveryCharges = {{ delivery_charges|tojson }};
         const subtotal = {{ subtotal }};
+        let allCities = {};
+        
+        // Initialize all cities data
+        document.addEventListener('DOMContentLoaded', function() {
+            // Store all cities data for each state
+            for (const state in deliveryCharges) {
+                allCities[state] = Object.keys(deliveryCharges[state]);
+            }
+            
+            // If state is pre-selected, load its cities
+            const stateSelect = document.getElementById('state');
+            if (stateSelect.value) {
+                loadCities();
+            }
+            
+            updateDeliveryCharge();
+        });
         
         function filterDropdown(searchId, dropdownId) {
             const input = document.getElementById(searchId);
             const filter = input.value.toUpperCase();
             const select = document.getElementById(dropdownId);
-            const options = select.getElementsByTagName('option');
+            const options = select.options;
             
-            for (let i = 0; i < options.length; i++) {
-                const txtValue = options[i].textContent || options[i].innerText;
-                if (txtValue.toUpperCase().indexOf(filter) > -1) {
-                    options[i].style.display = "";
-                } else {
-                    options[i].style.display = "none";
+            // Show all options when search is empty
+            if (filter === '') {
+                for (let i = 0; i < options.length; i++) {
+                    options[i].style.display = '';
                 }
+                return;
+            }
+            
+            // Filter options
+            let hasMatches = false;
+            for (let i = 0; i < options.length; i++) {
+                const option = options[i];
+                const text = option.textContent || option.innerText;
+                if (text.toUpperCase().indexOf(filter) > -1) {
+                    option.style.display = '';
+                    hasMatches = true;
+                } else {
+                    option.style.display = 'none';
+                }
+            }
+            
+            // If no matches, show a message
+            if (!hasMatches) {
+                const noResults = document.createElement('option');
+                noResults.value = '';
+                noResults.textContent = 'No matching results';
+                noResults.style.display = '';
+                select.appendChild(noResults);
+                setTimeout(() => {
+                    if (select.contains(noResults)) {
+                        select.removeChild(noResults);
+                    }
+                }, 2000);
             }
         }
         
-        document.getElementById('state').addEventListener('change', function() {
-            const state = this.value;
+        function loadCities() {
+            const stateSelect = document.getElementById('state');
             const citySelect = document.getElementById('city');
+            const state = stateSelect.value;
             
             citySelect.innerHTML = '<option value="">Select City</option>';
             
-            if (state && deliveryCharges[state]) {
-                for (const city in deliveryCharges[state]) {
+            if (state && allCities[state]) {
+                allCities[state].forEach(city => {
                     const option = document.createElement('option');
                     option.value = city;
                     option.textContent = city;
                     citySelect.appendChild(option);
-                }
+                });
             }
             
-            // Reset city search
+            // Reset city search input
             document.getElementById('city-search').value = '';
-            updateDeliveryCharge();
-        });
+        }
         
         function updateDeliveryCharge() {
             const state = document.getElementById('state').value;
@@ -3084,25 +3157,11 @@ def checkout():
                 charge = deliveryCharges[state][city];
             }
             
-            document.getElementById('delivery-charge-display').innerHTML = 
-                `<span>Delivery Charge (Advance Payment):</span><span>₹${charge.toLocaleString('en-IN')}</span>`;
-            document.getElementById('total-amount-display').innerHTML = 
-                `<span>Product Amount (Cash on Delivery):</span><span>₹${subtotal.toLocaleString('en-IN')}</span>`;
-            document.getElementById('total-payable-display').innerHTML = 
-                `<span>Total Payable:</span><span>₹${(subtotal).toLocaleString('en-IN')}</span>`;
+            document.getElementById('delivery-charge-value').textContent = `₹${charge.toLocaleString('en-IN')}`;
         }
-        
-        // Initialize delivery charge if state/city is pre-selected
-        document.addEventListener('DOMContentLoaded', function() {
-            const state = document.getElementById('state').value;
-            const city = document.getElementById('city').value;
-            if (state && city) {
-                updateDeliveryCharge();
-            }
-        });
     </script>
 </body>
-</html>               
+</html>
                     
                 
     ''', cart=session['cart'], subtotal=subtotal, delivery_charges=DELIVERY_CHARGES, user_profile=user_profile)
