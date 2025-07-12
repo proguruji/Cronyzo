@@ -1089,7 +1089,45 @@ body {
             <button type="submit">Search</button>
         </form>
     </div>
+
+       <!-- Categories Section -->
+    <div class="categories-container">
+        <div class="categories-header">
+            <h2>Shop by Category</h2>
+            {% if categories|length > 8 %}
+            <a href="javascript:void(0)" onclick="showAllCategories()" class="view-all">View All</a>
+            {% endif %}
+        </div>
+        
+        <div class="categories-scroll">
+            {% for category in categories[:8] %}
+            <div class="category-card" onclick="filterByCategory('{{ category }}')">
+                <div class="category-image">
+                    <img src="https://source.unsplash.com/200x200/?{{ category }},shopping" alt="{{ category }}">
+                </div>
+                <div class="category-name">{{ category }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
     
+    <!-- All Categories Modal -->
+    <div class="modal" id="allCategoriesModal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+            <h2>All Categories</h2>
+            <div class="categories-scroll">
+                {% for category in categories %}
+                <div class="category-card" onclick="filterByCategory('{{ category }}'); closeModal();">
+                    <div class="category-image">
+                        <img src="https://source.unsplash.com/200x200/?{{ category }},shopping" alt="{{ category }}">
+                    </div>
+                    <div class="category-name">{{ category }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
     <div class="products">
         {% for product in products %}
         <div class="product-card">
@@ -1209,6 +1247,29 @@ body {
             },
             body: JSON.stringify(data)
         });
+                // Category filtering and modal functions
+        function filterByCategory(category) {
+            document.querySelector('input[name="search"]').value = category;
+            document.querySelector('form[method="get"]').submit();
+        }
+        
+        function showAllCategories() {
+            document.getElementById('allCategoriesModal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function closeModal() {
+            document.getElementById('allCategoriesModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+        
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('allCategoriesModal');
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
     </script>
 </body>
 </html>
