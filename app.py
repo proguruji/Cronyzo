@@ -153,6 +153,19 @@ app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload size
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
+
+# First, add this function to get categories (place it with your other helper functions)
+def get_all_categories():
+    try:
+        with get_db() as conn:
+            c = conn.cursor()
+            c.execute("SELECT DISTINCT category FROM products WHERE category IS NOT NULL AND category != ''")
+            return [row[0] for row in c.fetchall()]
+    except Exception as e:
+        print(f"Error fetching categories: {e}")
+        return []
+
+
 # Create upload folder if it doesn't exist
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
@@ -517,7 +530,9 @@ def index():
     
     if 'cart' not in session:
         session['cart'] = {}
-    
+
+    # Then in your index route, add categories to the context
+categories = get_all_categories()
     return render_template_string('''
         <!DOCTYPE html>
 <html>
@@ -1048,6 +1063,181 @@ body {
     gap: 16px;
   }
 }
+
+/* Categories Section Styles */
+.categories-container {
+    max-width: 1200px;
+    margin: 30px auto;
+    padding: 0 20px;
+}
+
+.categories-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.categories-header h2 {
+    margin: 0;
+    font-size: 24px;
+    color: var(--dark);
+}
+
+.view-all {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s;
+}
+
+.view-all:hover {
+    text-decoration: underline;
+    color: var(--primary-dark);
+}
+
+.categories-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 15px;
+}
+
+.category-card {
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transition: all 0.3s;
+    cursor: pointer;
+    text-align: center;
+}
+
+.category-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+}
+
+.category-image {
+    width: 100%;
+    height: 100px;
+    overflow: hidden;
+}
+
+.category-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.category-name {
+    padding: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--dark);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.7);
+    z-index: 2000;
+    overflow-y: auto;
+}
+
+.modal-content {
+    background-color: white;
+    margin: 50px auto;
+    padding: 25px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 1000px;
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.close-modal {
+    position: absolute;
+    top: 15px;
+    right: 25px;
+    font-size: 30px;
+    color: #aaa;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.close-modal:hover {
+    color: var(--dark);
+}
+
+.modal-categories-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.modal-category-card {
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transition: all 0.3s;
+    cursor: pointer;
+    text-align: center;
+}
+
+.modal-category-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+}
+
+.modal-category-image {
+    width: 100%;
+    height: 120px;
+    overflow: hidden;
+}
+
+.modal-category-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.modal-category-name {
+    padding: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--dark);
+}
+
+@media (max-width: 768px) {
+    .categories-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 10px;
+    }
+    
+    .category-image {
+        height: 80px;
+    }
+    
+    .modal-categories-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 15px;
+    }
+    
+    .modal-category-image {
+        height: 100px;
+    }
+}
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
@@ -1075,7 +1265,70 @@ body {
             </div>
         </div>
     </div>
+
+        <!-- Categories Section -->
+    <div class="categories-container">
+        <div class="categories-header">
+            <h2>Shop by Category</h2>
+            {% if categories|length > 8 %}
+            <a href="javascript:void(0)" onclick="showAllCategories()" class="view-all">View All</a>
+            {% endif %}
+        </div>
+        
+        <div class="categories-grid">
+            {% for category in categories[:8] %}
+            <div class="category-card" onclick="filterByCategory('{{ category }}')">
+                <div class="category-image">
+                    <img src="https://source.unsplash.com/200x200/?{{ category }},shopping" alt="{{ category }}">
+                </div>
+                <div class="category-name">{{ category }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
     
+    <!-- All Categories Modal -->
+    <div class="modal" id="allCategoriesModal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+            <h2>All Categories</h2>
+            <div class="modal-categories-grid">
+                {% for category in categories %}
+                <div class="modal-category-card" onclick="filterByCategory('{{ category }}'); closeModal();">
+                    <div class="modal-category-image">
+                        <img src="https://source.unsplash.com/200x200/?{{ category }},shopping" alt="{{ category }}">
+                    </div>
+                    <div class="modal-category-name">{{ category }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <script>
+    // Category filtering and modal functions
+    function filterByCategory(category) {
+        document.querySelector('input[name="search"]').value = category;
+        document.querySelector('form[method="get"]').submit();
+    }
+    
+    function showAllCategories() {
+        document.getElementById('allCategoriesModal').style.display = 'block';
+        document.body.style.overflow = 'hidden';
+    }
+    
+    function closeModal() {
+        document.getElementById('allCategoriesModal').style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+    
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+        const modal = document.getElementById('allCategoriesModal');
+        if (event.target == modal) {
+            closeModal();
+        }
+    }
+</script>
     <div class="search-container">
         <form method="get" action="/">
             <input type="text" name="search" placeholder="Search products..." value="{{ search_query }}">
