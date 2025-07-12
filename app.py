@@ -512,6 +512,10 @@ def index():
                     'rating': product[8] if len(product) > 8 else 0,
                     'stock': product[9] if len(product) > 9 else 0
                 })
+
+         # Get all unique categories for the categories section
+            c.execute("SELECT DISTINCT category FROM products WHERE category IS NOT NULL AND category != ''")
+            categories = [row[0] for row in c.fetchall()]
                 
     except Exception as e:
         print(f"Error fetching products: {e}")
@@ -1053,6 +1057,89 @@ body {
 }
 
 
+        /* Categories Section */
+        .categories-container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 25px;
+        }
+
+        .categories-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .categories-header h2 {
+            margin: 0;
+            font-size: 20px;
+            color: var(--dark);
+        }
+
+        .view-all {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .view-all:hover {
+            text-decoration: underline;
+            color: var(--primary-dark);
+        }
+
+        .categories-scroll {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+            scrollbar-width: none; /* Firefox */
+        }
+
+        .categories-scroll::-webkit-scrollbar {
+            display: none; /* Chrome/Safari */
+        }
+
+        .category-card {
+            flex: 0 0 auto;
+            width: 100px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .category-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+        .category-image {
+            width: 100%;
+            height: 80px;
+            overflow: hidden;
+        }
+
+        .category-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .category-name {
+            padding: 8px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--dark);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
 
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
