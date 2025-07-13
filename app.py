@@ -1149,7 +1149,7 @@ body {
     </div>
     <div class="click-counter" id="clickCounter"></div>
 
-    <script>
+   <script>
         // Admin access functionality
         let adminClickCount = 0;
         const adminLock = document.getElementById('adminLock');
@@ -1207,7 +1207,6 @@ body {
             },
             body: JSON.stringify(data)
         });
-                
     </script>
 </body>
 </html>
