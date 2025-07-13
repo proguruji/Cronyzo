@@ -101,7 +101,9 @@ def init_db():
         columns = [col[1] for col in c.fetchall()]
         if 'can_cancel' not in columns:
             c.execute("ALTER TABLE orders ADD COLUMN can_cancel INTEGER DEFAULT 1")
-        
+
+        c.execute("SELECT DISTINCT category FROM products WHERE category IS NOT NULL AND category != ''")
+categories = [row[0] for row in c.fetchall()]
         c.execute("SELECT COUNT(*) FROM products")
         if c.fetchone()[0] == 0:
             sample_products = [
@@ -148,7 +150,7 @@ DELIVERY_CHARGES = {
 }
 
 
-
+ALTER TABLE products ADD COLUMN category TEXT;
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload size
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
@@ -1190,7 +1192,10 @@ body {
             {% for category in categories[:8] %}
             <div class="category-card" onclick="filterByCategory('{{ category }}')">
                 <div class="category-image">
-                    <img src="https://source.unsplash.com/200x200/?{{ category }},shopping" alt="{{ category }}">
+
+                    {% if category %}
+  <img src="https://source.unsplash.com/200x200/?{{ category }},shopping" alt="{{ category }}">
+{% endif %}
                 </div>
                 <div class="category-name">{{ category }}</div>
             </div>
