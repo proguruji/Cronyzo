@@ -4934,7 +4934,17 @@ def edit_profile():
                     <span>Account</span>
                 </a>
             </div>
-            
+
+            <div class="account-actions">
+                    <h3>Shopkeeper Access</h3>
+                    {% if 'shopkeeper_id' in session %}
+                        <p>You are logged in as a shopkeeper</p>
+                        <a href="{{ url_for('shopkeeper_dashboard') }}" class="btn">Shopkeeper Dashboard</a>
+                    {% else %}
+                        <a href="{{ url_for('shopkeeper_login') }}" class="btn">Shopkeeper Login</a>
+                        <p>Don't have a shopkeeper account? <a href="{{ url_for('shopkeeper_register') }}">Register here</a></p>
+                    {% endif %}
+                </div>
             <script>
                 const deliveryCharges = {{ delivery_charges|tojson }};
                 
@@ -10345,6 +10355,519 @@ if not os.path.exists(os.path.join(app.static_folder, 'images')):
 
 # ==================== END IMAGE MANAGEMENT ====================
 
+# Add these new routes to your existing Flask app
+
+# Shopkeeper Model
+@app.route('/add_shopkeeper', methods=['GET', 'POST'])
+def add_shopkeeper():
+    if request.method == 'POST':
+        try:
+            # Get form data
+            name = request.form['name']
+            phone = request.form['phone']
+            email = request.form['email']
+            address = request.form['address']
+            gst_number = request.form['gst_number']
+            pan_number = request.form['pan_number']
+            aadhaar_number = request.form['aadhaar_number']
+            
+            # Generate random password
+            password = secrets.token_urlsafe(8)
+            hashed_password = generate_password_hash(password)
+            
+            # Generate shopkeeper ID
+            shopkeeper_id = f"SHOP{secrets.token_hex(3).upper()}"
+            
+            with get_db() as conn:
+                c = conn.cursor()
+                
+                # Check if phone or email already exists
+                c.execute("SELECT * FROM shopkeepers WHERE phone = ? OR email = ?", (phone, email))
+                if c.fetchone():
+                    return "Phone or email already registered", 400
+                
+                # Insert new shopkeeper
+                c.execute('''INSERT INTO shopkeepers 
+                            (shopkeeper_id, name, phone, email, address, gst_number, 
+                             pan_number, aadhaar_number, password, status, created_at)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                         (shopkeeper_id, name, phone, email, address, gst_number,
+                          pan_number, aadhaar_number, hashed_password, 'pending', datetime.now()))
+                
+                conn.commit()
+                
+                # Here you would typically send the credentials to the shopkeeper
+                # For demo, we'll just display them
+                return render_template_string('''
+                    <h2>Shopkeeper Added Successfully</h2>
+                    <p>Shopkeeper ID: {{ shopkeeper_id }}</p>
+                    <p>Password: {{ password }}</p>
+                    <p>Please provide these credentials to the shopkeeper securely.</p>
+                    <a href="{{ url_for('admin_dashboard') }}">Back to Admin Dashboard</a>
+                ''', shopkeeper_id=shopkeeper_id, password=password)
+                
+        except Exception as e:
+            print(f"Error adding shopkeeper: {e}")
+            return "An error occurred", 500
+    
+    return render_template_string('''
+        <h2>Add New Shopkeeper</h2>
+        <form method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div>
+                <label>Full Name</label>
+                <input type="text" name="name" required>
+            </div>
+            
+            <div>
+                <label>Phone Number</label>
+                <input type="tel" name="phone" required>
+            </div>
+            
+            <div>
+                <label>Email</label>
+                <input type="email" name="email" required>
+            </div>
+            
+            <div>
+                <label>Address</label>
+                <textarea name="address" required></textarea>
+            </div>
+            
+            <div>
+                <label>GST Number</label>
+                <input type="text" name="gst_number" required>
+            </div>
+            
+            <div>
+                <label>PAN Number</label>
+                <input type="text" name="pan_number" required>
+            </div>
+            
+            <div>
+                <label>Aadhaar Number</label>
+                <input type="text" name="aadhaar_number" required>
+            </div>
+            
+            <button type="submit">Register Shopkeeper</button>
+        </form>
+    ''')
+
+# Shopkeeper Login
+@app.route('/shopkeeper_login', methods=['GET', 'POST'])
+def shopkeeper_login():
+    if request.method == 'POST':
+        shopkeeper_id = request.form['shopkeeper_id']
+        password = request.form['password']
+        
+        try:
+            with get_db() as conn:
+                c = conn.cursor()
+                c.execute("SELECT * FROM shopkeepers WHERE shopkeeper_id = ?", (shopkeeper_id,))
+                shopkeeper = c.fetchone()
+                
+                if not shopkeeper or not check_password_hash(shopkeeper['password'], password):
+                    return "Invalid credentials", 401
+                
+                if shopkeeper['status'] != 'approved':
+                    return "Your account is pending approval", 403
+                
+                session['shopkeeper_id'] = shopkeeper['id']
+                session['shopkeeper_name'] = shopkeeper['name']
+                return redirect(url_for('shopkeeper_dashboard'))
+                
+        except Exception as e:
+            print(f"Login error: {e}")
+            return "An error occurred", 500
+    
+    return render_template_string('''
+        <h2>Shopkeeper Login</h2>
+        <form method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div>
+                <label>Shopkeeper ID</label>
+                <input type="text" name="shopkeeper_id" required>
+            </div>
+            
+            <div>
+                <label>Password</label>
+                <input type="password" name="password" required>
+            </div>
+            
+            <button type="submit">Login</button>
+        </form>
+        
+        <p>Don't have an account? <a href="{{ url_for('shopkeeper_register') }}">Register here</a></p>
+    ''')
+
+# Shopkeeper Registration
+@app.route('/shopkeeper_register', methods=['GET', 'POST'])
+def shopkeeper_register():
+    if request.method == 'POST':
+        try:
+            # Get form data
+            name = request.form['name']
+            phone = request.form['phone']
+            email = request.form['email']
+            address = request.form['address']
+            gst_number = request.form['gst_number']
+            pan_number = request.form['pan_number']
+            aadhaar_number = request.form['aadhaar_number']
+            password = request.form['password']
+            
+            # Generate shopkeeper ID
+            shopkeeper_id = f"SHOP{secrets.token_hex(3).upper()}"
+            hashed_password = generate_password_hash(password)
+            
+            with get_db() as conn:
+                c = conn.cursor()
+                
+                # Check if phone or email already exists
+                c.execute("SELECT * FROM shopkeepers WHERE phone = ? OR email = ?", (phone, email))
+                if c.fetchone():
+                    return "Phone or email already registered", 400
+                
+                # Insert new shopkeeper
+                c.execute('''INSERT INTO shopkeepers 
+                            (shopkeeper_id, name, phone, email, address, gst_number, 
+                             pan_number, aadhaar_number, password, status, created_at)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                         (shopkeeper_id, name, phone, email, address, gst_number,
+                          pan_number, aadhaar_number, hashed_password, 'pending', datetime.now()))
+                
+                conn.commit()
+                
+                return render_template_string('''
+                    <h2>Registration Successful</h2>
+                    <p>Your account is pending approval. You'll receive an email once approved.</p>
+                    <p>Your Shopkeeper ID: {{ shopkeeper_id }}</p>
+                    <a href="{{ url_for('shopkeeper_login') }}">Login</a>
+                ''', shopkeeper_id=shopkeeper_id)
+                
+        except Exception as e:
+            print(f"Registration error: {e}")
+            return "An error occurred", 500
+    
+    return render_template_string('''
+        <h2>Shopkeeper Registration</h2>
+        <form method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div>
+                <label>Full Name</label>
+                <input type="text" name="name" required>
+            </div>
+            
+            <div>
+                <label>Phone Number</label>
+                <input type="tel" name="phone" required>
+            </div>
+            
+            <div>
+                <label>Email</label>
+                <input type="email" name="email" required>
+            </div>
+            
+            <div>
+                <label>Address</label>
+                <textarea name="address" required></textarea>
+            </div>
+            
+            <div>
+                <label>GST Number</label>
+                <input type="text" name="gst_number" required>
+            </div>
+            
+            <div>
+                <label>PAN Number</label>
+                <input type="text" name="pan_number" required>
+            </div>
+            
+            <div>
+                <label>Aadhaar Number</label>
+                <input type="text" name="aadhaar_number" required>
+            </div>
+            
+            <div>
+                <label>Password</label>
+                <input type="password" name="password" required>
+            </div>
+            
+            <div>
+                <input type="checkbox" name="terms" required>
+                <label>I agree to the Terms and Conditions</label>
+            </div>
+            
+            <button type="submit">Register</button>
+        </form>
+        
+        <p>Already have an account? <a href="{{ url_for('shopkeeper_login') }}">Login here</a></p>
+    ''')
+
+# Shopkeeper Dashboard
+@app.route('/shopkeeper/dashboard')
+def shopkeeper_dashboard():
+    if 'shopkeeper_id' not in session:
+        return redirect(url_for('shopkeeper_login'))
+    
+    try:
+        with get_db() as conn:
+            c = conn.cursor()
+            
+            # Get shopkeeper details
+            c.execute("SELECT * FROM shopkeepers WHERE id = ?", (session['shopkeeper_id'],))
+            shopkeeper = c.fetchone()
+            
+            # Get shopkeeper's products
+            c.execute("SELECT * FROM products WHERE shopkeeper_id = ?", (session['shopkeeper_id'],))
+            products = c.fetchall()
+            
+            # Get recent orders for shopkeeper's products
+            c.execute('''SELECT o.* FROM orders o
+                        JOIN order_items oi ON o.id = oi.order_id
+                        JOIN products p ON oi.product_id = p.id
+                        WHERE p.shopkeeper_id = ?
+                        ORDER BY o.order_date DESC LIMIT 5''', (session['shopkeeper_id'],))
+            recent_orders = c.fetchall()
+            
+    except Exception as e:
+        print(f"Dashboard error: {e}")
+        return "An error occurred", 500
+    
+    return render_template_string('''
+        <h2>Shopkeeper Dashboard</h2>
+        <p>Welcome, {{ shopkeeper['name'] }}</p>
+        
+        <div>
+            <h3>Your Products</h3>
+            <a href="{{ url_for('add_product') }}">Add New Product</a>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Price</th>
+                        <th>Stock</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                    <tr>
+                        <td>{{ product.id }}</td>
+                        <td>{{ product.title }}</td>
+                        <td>₹{{ product.price }}</td>
+                        <td>{{ product.stock }}</td>
+                        <td>
+                            <a href="{{ url_for('edit_product', product_id=product.id) }}">Edit</a>
+                            <a href="{{ url_for('delete_product', product_id=product.id) }}">Delete</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div>
+            <h3>Recent Orders</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Date</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in recent_orders %}
+                    <tr>
+                        <td>{{ order.id }}</td>
+                        <td>{{ order.order_date }}</td>
+                        <td>₹{{ order.total_amount }}</td>
+                        <td>{{ order.status }}</td>
+                        <td>
+                            <a href="{{ url_for('view_order', order_id=order.id) }}">View</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <a href="{{ url_for('shopkeeper_logout') }}">Logout</a>
+    ''', shopkeeper=shopkeeper, products=products, recent_orders=recent_orders)
+
+# Add Product
+@app.route('/shopkeeper/products/add', methods=['GET', 'POST'])
+def add_product():
+    if 'shopkeeper_id' not in session:
+        return redirect(url_for('shopkeeper_login'))
+    
+    if request.method == 'POST':
+        try:
+            title = request.form['title']
+            description = request.form['description']
+            price = float(request.form['price'])
+            stock = int(request.form['stock'])
+            category = request.form['category']
+            
+            # Handle file upload
+            if 'image' in request.files:
+                image = request.files['image']
+                if image.filename != '':
+                    filename = secure_filename(image.filename)
+                    image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                    image.save(image_path)
+                    image_url = filename
+                else:
+                    image_url = None
+            
+            with get_db() as conn:
+                c = conn.cursor()
+                c.execute('''INSERT INTO products 
+                            (title, description, price, stock, category, image, shopkeeper_id)
+                            VALUES (?, ?, ?, ?, ?, ?, ?)''',
+                         (title, description, price, stock, category, image_url, session['shopkeeper_id']))
+                conn.commit()
+                
+                return redirect(url_for('shopkeeper_dashboard'))
+                
+        except Exception as e:
+            print(f"Add product error: {e}")
+            return "An error occurred", 500
+    
+    return render_template_string('''
+        <h2>Add New Product</h2>
+        <form method="post" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div>
+                <label>Product Name</label>
+                <input type="text" name="title" required>
+            </div>
+            
+            <div>
+                <label>Description</label>
+                <textarea name="description" required></textarea>
+            </div>
+            
+            <div>
+                <label>Price</label>
+                <input type="number" step="0.01" name="price" required>
+            </div>
+            
+            <div>
+                <label>Stock Quantity</label>
+                <input type="number" name="stock" required>
+            </div>
+            
+            <div>
+                <label>Category</label>
+                <select name="category" required>
+                    <option value="Electronics">Electronics</option>
+                    <option value="Clothing">Clothing</option>
+                    <option value="Home">Home</option>
+                    <option value="Groceries">Groceries</option>
+                </select>
+            </div>
+            
+            <div>
+                <label>Product Image</label>
+                <input type="file" name="image">
+            </div>
+            
+            <button type="submit">Add Product</button>
+        </form>
+    ''')
+
+# Admin Shopkeeper Management
+@app.route('/admin/shopkeepers')
+def admin_shopkeepers():
+    # This should be protected with admin authentication
+    try:
+        with get_db() as conn:
+            c = conn.cursor()
+            c.execute("SELECT * FROM shopkeepers ORDER BY created_at DESC")
+            shopkeepers = c.fetchall()
+            
+    except Exception as e:
+        print(f"Error fetching shopkeepers: {e}")
+        return "An error occurred", 500
+    
+    return render_template_string('''
+        <h2>Shopkeeper Management</h2>
+        <a href="{{ url_for('add_shopkeeper') }}">Add New Shopkeeper</a>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for shopkeeper in shopkeepers %}
+                <tr>
+                    <td>{{ shopkeeper.shopkeeper_id }}</td>
+                    <td>{{ shopkeeper.name }}</td>
+                    <td>{{ shopkeeper.phone }}</td>
+                    <td>{{ shopkeeper.email }}</td>
+                    <td>{{ shopkeeper.status }}</td>
+                    <td>
+                        {% if shopkeeper.status == 'pending' %}
+                        <a href="{{ url_for('approve_shopkeeper', id=shopkeeper.id) }}">Approve</a>
+                        {% endif %}
+                        <a href="{{ url_for('view_shopkeeper', id=shopkeeper.id) }}">View</a>
+                        <a href="{{ url_for('edit_shopkeeper', id=shopkeeper.id) }}">Edit</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    ''', shopkeepers=shopkeepers)
+
+# Add this to your init_db() function to create the shopkeepers table
+def init_db():
+    try:
+        conn = sqlite3.connect('ecommerce.db')
+        c = conn.cursor()
+        
+        # Create shopkeepers table if not exists
+        c.execute('''CREATE TABLE IF NOT EXISTS shopkeepers
+                    (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    shopkeeper_id TEXT UNIQUE NOT NULL,
+                    name TEXT NOT NULL,
+                    phone TEXT UNIQUE NOT NULL,
+                    email TEXT UNIQUE NOT NULL,
+                    address TEXT NOT NULL,
+                    gst_number TEXT,
+                    pan_number TEXT,
+                    aadhaar_number TEXT,
+                    password TEXT NOT NULL,
+                    status TEXT DEFAULT 'pending',
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP)''')
+        
+        # Add shopkeeper_id column to products table if not exists
+        c.execute("PRAGMA table_info(products)")
+        columns = [col[1] for col in c.fetchall()]
+        if 'shopkeeper_id' not in columns:
+            c.execute("ALTER TABLE products ADD COLUMN shopkeeper_id INTEGER")
+        
+        conn.commit()
+    except Exception as e:
+        print(f"Database error: {e}")
+        conn.rollback()
+    finally:
+        conn.close()
 
 # ==================== END ADMIN PANEL ====================
 if __name__ == '__main__':
