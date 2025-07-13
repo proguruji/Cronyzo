@@ -97,12 +97,7 @@ def init_db():
             FOREIGN KEY(user_id) REFERENCES users(id))''')
         
         
-        c.execute("PRAGMA table_info(orders)")
-        columns = [col[1] for col in c.fetchall()]
-        if 'can_cancel' not in columns:
-            c.execute("ALTER TABLE orders ADD COLUMN can_cancel INTEGER DEFAULT 1")
 
-        c.execute("SELECT DISTINCT category FROM products WHERE category IS NOT NULL AND category != ''")
 categories = [row[0] for row in c.fetchall()]
         c.execute("SELECT COUNT(*) FROM products")
         if c.fetchone()[0] == 0:
@@ -150,7 +145,6 @@ DELIVERY_CHARGES = {
 }
 
 
-ALTER TABLE products ADD COLUMN category TEXT;
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload size
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
@@ -514,11 +508,7 @@ def index():
                     'rating': product[8] if len(product) > 8 else 0,
                     'stock': product[9] if len(product) > 9 else 0
                 })
-
-         # Get all unique categories for the categories section
-            c.execute("SELECT DISTINCT category FROM products WHERE category IS NOT NULL AND category != ''")
-            categories = [row[0] for row in c.fetchall()]
-                
+   
     except Exception as e:
         print(f"Error fetching products: {e}")
         products = []
@@ -1059,89 +1049,7 @@ body {
 }
 
 
-        /* Categories Section */
-        .categories-container {
-            max-width: 1200px;
-            margin: 20px auto;
-            padding: 0 25px;
-        }
 
-        .categories-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .categories-header h2 {
-            margin: 0;
-            font-size: 20px;
-            color: var(--dark);
-        }
-
-        .view-all {
-            color: var(--primary);
-            text-decoration: none;
-            font-weight: 500;
-            font-size: 14px;
-            transition: all 0.3s;
-        }
-
-        .view-all:hover {
-            text-decoration: underline;
-            color: var(--primary-dark);
-        }
-
-        .categories-scroll {
-            display: flex;
-            gap: 12px;
-            overflow-x: auto;
-            padding-bottom: 10px;
-            scrollbar-width: none; /* Firefox */
-        }
-
-        .categories-scroll::-webkit-scrollbar {
-            display: none; /* Chrome/Safari */
-        }
-
-        .category-card {
-            flex: 0 0 auto;
-            width: 100px;
-            background: white;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            transition: all 0.3s;
-            cursor: pointer;
-            text-align: center;
-        }
-
-        .category-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-        }
-
-        .category-image {
-            width: 100%;
-            height: 80px;
-            overflow: hidden;
-        }
-
-        .category-image img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .category-name {
-            padding: 8px;
-            font-size: 12px;
-            font-weight: 500;
-            color: var(--dark);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
 
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -1179,47 +1087,7 @@ body {
         </form>
     </div>
 
-       <!-- Categories Section -->
-    <div class="categories-container">
-        <div class="categories-header">
-            <h2>Shop by Category</h2>
-            {% if categories|length > 8 %}
-            <a href="javascript:void(0)" onclick="showAllCategories()" class="view-all">View All</a>
-            {% endif %}
-        </div>
-        
-        <div class="categories-scroll">
-            {% for category in categories[:8] %}
-            <div class="category-card" onclick="filterByCategory('{{ category }}')">
-                <div class="category-image">
 
-                    {% if category %}
-  <img src="https://source.unsplash.com/200x200/?{{ category }},shopping" alt="{{ category }}">
-{% endif %}
-                </div>
-                <div class="category-name">{{ category }}</div>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    
-    <!-- All Categories Modal -->
-    <div class="modal" id="allCategoriesModal">
-        <div class="modal-content">
-            <span class="close-modal" onclick="closeModal()">&times;</span>
-            <h2>All Categories</h2>
-            <div class="categories-scroll">
-                {% for category in categories %}
-                <div class="category-card" onclick="filterByCategory('{{ category }}'); closeModal();">
-                    <div class="category-image">
-                        <img src="https://source.unsplash.com/200x200/?{{ category }},shopping" alt="{{ category }}">
-                    </div>
-                    <div class="category-name">{{ category }}</div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
     <div class="products">
         {% for product in products %}
         <div class="product-card">
@@ -1339,29 +1207,7 @@ body {
             },
             body: JSON.stringify(data)
         });
-                // Category filtering and modal functions
-        function filterByCategory(category) {
-            document.querySelector('input[name="search"]').value = category;
-            document.querySelector('form[method="get"]').submit();
-        }
-        
-        function showAllCategories() {
-            document.getElementById('allCategoriesModal').style.display = 'block';
-            document.body.style.overflow = 'hidden';
-        }
-        
-        function closeModal() {
-            document.getElementById('allCategoriesModal').style.display = 'none';
-            document.body.style.overflow = 'auto';
-        }
-        
-        // Close modal when clicking outside
-        window.onclick = function(event) {
-            const modal = document.getElementById('allCategoriesModal');
-            if (event.target == modal) {
-                closeModal();
-            }
-        }
+                
     </script>
 </body>
 </html>
