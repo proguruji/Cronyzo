@@ -10038,6 +10038,91 @@ def admin_settings():
                 gap: 10px;
             }
         }
+        /* Admin Shopkeeper Styles */
+.status-badge {
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+.status-pending {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.status-approved {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-suspended {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.status-active {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-inactive {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.admin-table th, .admin-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.admin-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.admin-table tr:hover {
+    background-color: #f8f9fa;
+}
+
+.action-buttons .btn {
+    padding: 5px 8px;
+    margin-right: 5px;
+}
+
+.admin-form .form-group {
+    margin-bottom: 20px;
+}
+
+.admin-form label {
+    font-weight: 500;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.admin-form .form-control {
+    width: 100%;
+    padding: 10px 15px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+}
+
+.admin-form .row {
+    margin-left: -10px;
+    margin-right: -10px;
+}
+
+.admin-form .row > div {
+    padding-left: 10px;
+    padding-right: 10px;
+}
             </style>
             <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
         </head>
@@ -10059,6 +10144,12 @@ def admin_settings():
                         <li><a href="{{ url_for('admin_orders') }}"><i class="fas fa-shopping-bag"></i> Orders</a></li>
                         <li><a href="{{ url_for('admin_users') }}"><i class="fas fa-users"></i> Users</a></li>
                         <li><a href="{{ url_for('admin_settings') }}" class="active"><i class="fas fa-cog"></i> Settings</a></li>
+
+                        <li class="nav-item">
+    <a class="nav-link" href="{{ url_for('admin_shopkeepers') }}">
+        <i class="fas fa-store"></i> Shopkeepers
+    </a>
+</li>
                         <!-- यह नया लिंक जोड़ें -->
     <li><a href="{{ url_for('admin_images') }}" class="active"><i class="fas fa-images"></i> Images</a></li>
                     </ul>
@@ -10355,6 +10446,472 @@ if not os.path.exists(os.path.join(app.static_folder, 'images')):
 
 # ==================== END IMAGE MANAGEMENT ====================
 
+
+
+
+# Admin Shopkeeper Management Routes
+@app.route('/admin/shopkeepers')
+def admin_shopkeepers():
+    if not is_admin():  # Make sure you have an is_admin() function
+        return redirect(url_for('admin_login'))
+    
+    try:
+        with get_db() as conn:
+            c = conn.cursor()
+            c.execute("SELECT * FROM shopkeepers ORDER BY created_at DESC")
+            shopkeepers = c.fetchall()
+            
+    except Exception as e:
+        print(f"Error fetching shopkeepers: {e}")
+        return "An error occurred", 500
+    
+    return render_template_string('''
+        {% extends "admin_base.html" %}
+        {% block content %}
+        <div class="admin-container">
+            <h2>Shopkeeper Management</h2>
+            
+            <div class="admin-actions">
+                <a href="{{ url_for('add_shopkeeper') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add New Shopkeeper
+                </a>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Phone</th>
+                            <th>Email</th>
+                            <th>Status</th>
+                            <th>Registered</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for shopkeeper in shopkeepers %}
+                        <tr>
+                            <td>{{ shopkeeper.shopkeeper_id }}</td>
+                            <td>{{ shopkeeper.name }}</td>
+                            <td>{{ shopkeeper.phone }}</td>
+                            <td>{{ shopkeeper.email }}</td>
+                            <td>
+                                <span class="status-badge status-{{ shopkeeper.status }}">
+                                    {{ shopkeeper.status|capitalize }}
+                                </span>
+                            </td>
+                            <td>{{ shopkeeper.created_at }}</td>
+                            <td class="action-buttons">
+                                {% if shopkeeper.status == 'pending' %}
+                                <a href="{{ url_for('approve_shopkeeper', id=shopkeeper.id) }}" 
+                                   class="btn btn-sm btn-success" title="Approve">
+                                    <i class="fas fa-check"></i>
+                                </a>
+                                {% endif %}
+                                <a href="{{ url_for('view_shopkeeper', id=shopkeeper.id) }}" 
+                                   class="btn btn-sm btn-info" title="View">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{{ url_for('edit_shopkeeper', id=shopkeeper.id) }}" 
+                                   class="btn btn-sm btn-warning" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{{ url_for('delete_shopkeeper', id=shopkeeper.id) }}" 
+                                   class="btn btn-sm btn-danger" title="Delete"
+                                   onclick="return confirm('Are you sure you want to delete this shopkeeper?')">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endblock %}
+    ''', shopkeepers=shopkeepers)
+
+@app.route('/admin/shopkeepers/add', methods=['GET', 'POST'])
+def add_shopkeeper():
+    if not is_admin():
+        return redirect(url_for('admin_login'))
+    
+    if request.method == 'POST':
+        try:
+            name = request.form['name']
+            phone = request.form['phone']
+            email = request.form['email']
+            address = request.form['address']
+            gst_number = request.form['gst_number']
+            pan_number = request.form['pan_number']
+            aadhaar_number = request.form['aadhaar_number']
+            
+            # Generate credentials
+            password = secrets.token_urlsafe(8)
+            hashed_password = generate_password_hash(password)
+            shopkeeper_id = f"SHOP{secrets.token_hex(3).upper()}"
+            
+            with get_db() as conn:
+                c = conn.cursor()
+                c.execute('''INSERT INTO shopkeepers 
+                            (shopkeeper_id, name, phone, email, address, gst_number, 
+                             pan_number, aadhaar_number, password, status)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                         (shopkeeper_id, name, phone, email, address, gst_number,
+                          pan_number, aadhaar_number, hashed_password, 'approved'))
+                conn.commit()
+                
+                # In production, send email with credentials
+                return render_template_string('''
+                    <div class="alert alert-success">
+                        <h4>Shopkeeper Added Successfully</h4>
+                        <p><strong>Shopkeeper ID:</strong> {{ shopkeeper_id }}</p>
+                        <p><strong>Password:</strong> {{ password }}</p>
+                        <p>Please provide these credentials to the shopkeeper securely.</p>
+                        <a href="{{ url_for('admin_shopkeepers') }}" class="btn btn-primary">
+                            Back to Shopkeepers
+                        </a>
+                    </div>
+                ''', shopkeeper_id=shopkeeper_id, password=password)
+                
+        except Exception as e:
+            print(f"Error adding shopkeeper: {e}")
+            return render_template_string('''
+                <div class="alert alert-danger">
+                    Error adding shopkeeper: {{ error }}
+                </div>
+                <a href="{{ url_for('admin_shopkeepers') }}" class="btn btn-primary">
+                    Back to Shopkeepers
+                </a>
+            ''', error=str(e))
+    
+    return render_template_string('''
+        {% extends "admin_base.html" %}
+        {% block content %}
+        <div class="admin-container">
+            <h2>Add New Shopkeeper</h2>
+            
+            <form method="post" class="admin-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="form-group">
+                    <label>Full Name*</label>
+                    <input type="text" name="name" class="form-control" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Phone Number*</label>
+                    <input type="tel" name="phone" class="form-control" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Email*</label>
+                    <input type="email" name="email" class="form-control" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Address*</label>
+                    <textarea name="address" class="form-control" required></textarea>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>GST Number*</label>
+                            <input type="text" name="gst_number" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>PAN Number*</label>
+                            <input type="text" name="pan_number" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>Aadhaar Number*</label>
+                            <input type="text" name="aadhaar_number" class="form-control" required>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Shopkeeper
+                    </button>
+                    <a href="{{ url_for('admin_shopkeepers') }}" class="btn btn-secondary">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+        {% endblock %}
+    ''')
+
+@app.route('/admin/shopkeepers/<int:id>/approve')
+def approve_shopkeeper(id):
+    if not is_admin():
+        return redirect(url_for('admin_login'))
+    
+    try:
+        with get_db() as conn:
+            c = conn.cursor()
+            c.execute("UPDATE shopkeepers SET status = 'approved' WHERE id = ?", (id,))
+            conn.commit()
+            
+            # In production, send approval notification email
+            return redirect(url_for('admin_shopkeepers'))
+            
+    except Exception as e:
+        print(f"Error approving shopkeeper: {e}")
+        return "An error occurred", 500
+
+@app.route('/admin/shopkeepers/<int:id>/view')
+def view_shopkeeper(id):
+    if not is_admin():
+        return redirect(url_for('admin_login'))
+    
+    try:
+        with get_db() as conn:
+            c = conn.cursor()
+            c.execute("SELECT * FROM shopkeepers WHERE id = ?", (id,))
+            shopkeeper = c.fetchone()
+            
+            if not shopkeeper:
+                return "Shopkeeper not found", 404
+                
+            # Get shopkeeper's products
+            c.execute("SELECT * FROM products WHERE shopkeeper_id = ?", (id,))
+            products = c.fetchall()
+            
+    except Exception as e:
+        print(f"Error viewing shopkeeper: {e}")
+        return "An error occurred", 500
+    
+    return render_template_string('''
+        {% extends "admin_base.html" %}
+        {% block content %}
+        <div class="admin-container">
+            <h2>Shopkeeper Details</h2>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4>{{ shopkeeper.name }} ({{ shopkeeper.shopkeeper_id }})</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Phone:</strong> {{ shopkeeper.phone }}</p>
+                            <p><strong>Email:</strong> {{ shopkeeper.email }}</p>
+                            <p><strong>Status:</strong> 
+                                <span class="status-badge status-{{ shopkeeper.status }}">
+                                    {{ shopkeeper.status|capitalize }}
+                                </span>
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>GST:</strong> {{ shopkeeper.gst_number }}</p>
+                            <p><strong>PAN:</strong> {{ shopkeeper.pan_number }}</p>
+                            <p><strong>Aadhaar:</strong> {{ shopkeeper.aadhaar_number }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <p><strong>Address:</strong> {{ shopkeeper.address }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <small class="text-muted">
+                        Registered on: {{ shopkeeper.created_at }}
+                    </small>
+                </div>
+            </div>
+            
+            <h4>Products ({{ products|length }})</h4>
+            {% if products %}
+            <div class="table-responsive">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Price</th>
+                            <th>Stock</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in products %}
+                        <tr>
+                            <td>{{ product.id }}</td>
+                            <td>{{ product.title }}</td>
+                            <td>₹{{ product.price }}</td>
+                            <td>{{ product.stock }}</td>
+                            <td>
+                                {% if product.stock > 0 %}
+                                <span class="status-badge status-active">Active</span>
+                                {% else %}
+                                <span class="status-badge status-inactive">Out of Stock</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                This shopkeeper hasn't added any products yet.
+            </div>
+            {% endif %}
+            
+            <a href="{{ url_for('admin_shopkeepers') }}" class="btn btn-secondary">
+                Back to Shopkeepers
+            </a>
+        </div>
+        {% endblock %}
+    ''', shopkeeper=shopkeeper, products=products)
+
+@app.route('/admin/shopkeepers/<int:id>/edit', methods=['GET', 'POST'])
+def edit_shopkeeper(id):
+    if not is_admin():
+        return redirect(url_for('admin_login'))
+    
+    try:
+        with get_db() as conn:
+            c = conn.cursor()
+            
+            if request.method == 'POST':
+                name = request.form['name']
+                phone = request.form['phone']
+                email = request.form['email']
+                address = request.form['address']
+                gst_number = request.form['gst_number']
+                pan_number = request.form['pan_number']
+                aadhaar_number = request.form['aadhaar_number']
+                status = request.form['status']
+                
+                c.execute('''UPDATE shopkeepers 
+                            SET name = ?, phone = ?, email = ?, address = ?,
+                                gst_number = ?, pan_number = ?, aadhaar_number = ?,
+                                status = ?
+                            WHERE id = ?''',
+                         (name, phone, email, address, gst_number, pan_number, 
+                          aadhaar_number, status, id))
+                conn.commit()
+                
+                return redirect(url_for('view_shopkeeper', id=id))
+            
+            c.execute("SELECT * FROM shopkeepers WHERE id = ?", (id,))
+            shopkeeper = c.fetchone()
+            
+            if not shopkeeper:
+                return "Shopkeeper not found", 404
+                
+    except Exception as e:
+        print(f"Error editing shopkeeper: {e}")
+        return "An error occurred", 500
+    
+    return render_template_string('''
+        {% extends "admin_base.html" %}
+        {% block content %}
+        <div class="admin-container">
+            <h2>Edit Shopkeeper</h2>
+            
+            <form method="post" class="admin-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="form-group">
+                    <label>Shopkeeper ID</label>
+                    <input type="text" class="form-control" value="{{ shopkeeper.shopkeeper_id }}" readonly>
+                </div>
+                
+                <div class="form-group">
+                    <label>Full Name*</label>
+                    <input type="text" name="name" class="form-control" value="{{ shopkeeper.name }}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Phone Number*</label>
+                    <input type="tel" name="phone" class="form-control" value="{{ shopkeeper.phone }}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Email*</label>
+                    <input type="email" name="email" class="form-control" value="{{ shopkeeper.email }}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Address*</label>
+                    <textarea name="address" class="form-control" required>{{ shopkeeper.address }}</textarea>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>GST Number*</label>
+                            <input type="text" name="gst_number" class="form-control" 
+                                   value="{{ shopkeeper.gst_number }}" required>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>PAN Number*</label>
+                            <input type="text" name="pan_number" class="form-control" 
+                                   value="{{ shopkeeper.pan_number }}" required>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>Aadhaar Number*</label>
+                            <input type="text" name="aadhaar_number" class="form-control" 
+                                   value="{{ shopkeeper.aadhaar_number }}" required>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Status*</label>
+                    <select name="status" class="form-control" required>
+                        <option value="pending" {% if shopkeeper.status == 'pending' %}selected{% endif %}>Pending</option>
+                        <option value="approved" {% if shopkeeper.status == 'approved' %}selected{% endif %}>Approved</option>
+                        <option value="suspended" {% if shopkeeper.status == 'suspended' %}selected{% endif %}>Suspended</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                    <a href="{{ url_for('view_shopkeeper', id=shopkeeper.id) }}" class="btn btn-secondary">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+        {% endblock %}
+    ''', shopkeeper=shopkeeper)
+
+@app.route('/admin/shopkeepers/<int:id>/delete')
+def delete_shopkeeper(id):
+    if not is_admin():
+        return redirect(url_for('admin_login'))
+    
+    try:
+        with get_db() as conn:
+            c = conn.cursor()
+            
+            # First check if shopkeeper has products
+            c.execute("SELECT COUNT(*) FROM products WHERE shopkeeper_id = ?", (id,))
+            product_count = c.fetchone()[0]
+            
+            if product_count > 0:
+                return render_template_string('''
+                    <div class="alert alert-danger">
+                     
 # Add these new routes to your existing Flask app
 
 # Shopkeeper Model
