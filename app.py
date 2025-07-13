@@ -1,3 +1,4 @@
+
 from flask import Flask, render_template_string, request, redirect, url_for, session, abort, jsonify
 import sqlite3
 from config import Config
@@ -97,8 +98,11 @@ def init_db():
             FOREIGN KEY(user_id) REFERENCES users(id))''')
         
         
-
-categories = [row[0] for row in c.fetchall()]
+        c.execute("PRAGMA table_info(orders)")
+        columns = [col[1] for col in c.fetchall()]
+        if 'can_cancel' not in columns:
+            c.execute("ALTER TABLE orders ADD COLUMN can_cancel INTEGER DEFAULT 1")
+        
         c.execute("SELECT COUNT(*) FROM products")
         if c.fetchone()[0] == 0:
             sample_products = [
@@ -120,6 +124,7 @@ categories = [row[0] for row in c.fetchall()]
         conn.rollback()
     finally:
         conn.close()
+
 
 init_db()
 
